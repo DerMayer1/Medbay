@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+}
+
+:root {
+  /* Premium deep dark background */
+  --background: #050505; 
+  --foreground: #fff8ef;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: #d97934;
+  color: #fff8ef;
+}
+
+/* Custom scrollbar for premium feel */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+::-webkit-scrollbar-thumb {
+  background: #f0a15d40;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #f0a15d80;
+}
