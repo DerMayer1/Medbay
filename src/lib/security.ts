@@ -110,7 +110,11 @@ export async function requireAdmin() {
   }
 
   const supabase = await getServerSupabase();
-  const { data, error } = (await supabase?.auth.getUser()) || { data: { user: null }, error: null };
+  if (!supabase) {
+    return NextResponse.json({ error: "auth_not_configured" }, { status: 503 });
+  }
+
+  const { data, error } = await supabase.auth.getUser();
 
   if (error || !data.user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
