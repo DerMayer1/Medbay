@@ -20,7 +20,6 @@ const quickReplies = [
 ];
 
 export function ChatWidget() {
-  const [conversationId, setConversationId] = useState<string>("");
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<UiMessage[]>([
     {
@@ -31,6 +30,7 @@ export function ChatWidget() {
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const conversationIdRef = useRef<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -38,7 +38,7 @@ export function ChatWidget() {
     const stored = window.localStorage.getItem("medbay_conversation_id");
     const id = stored || crypto.randomUUID();
     window.localStorage.setItem("medbay_conversation_id", id);
-    setConversationId(id);
+    conversationIdRef.current = id;
   }, []);
 
   useEffect(() => {
@@ -48,6 +48,7 @@ export function ChatWidget() {
   async function sendMessage(message: string) {
     const text = message.trim();
     if (!text || isLoading) return;
+    const conversationId = getConversationId();
 
     setInput("");
     setIsLoading(true);
@@ -67,7 +68,7 @@ export function ChatWidget() {
       const data = await response.json();
       if (data.conversationId) {
         window.localStorage.setItem("medbay_conversation_id", data.conversationId);
-        setConversationId(data.conversationId);
+        conversationIdRef.current = data.conversationId;
       }
 
       setMessages((current) => [
@@ -96,6 +97,15 @@ export function ChatWidget() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void sendMessage(input);
+  }
+
+  function getConversationId() {
+    if (conversationIdRef.current) return conversationIdRef.current;
+    const stored = window.localStorage.getItem("medbay_conversation_id");
+    const id = stored || crypto.randomUUID();
+    window.localStorage.setItem("medbay_conversation_id", id);
+    conversationIdRef.current = id;
+    return id;
   }
 
   return (

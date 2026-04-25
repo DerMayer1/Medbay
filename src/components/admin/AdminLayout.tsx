@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Database, LayoutDashboard, MessageSquareText, Settings, ShieldCheck, Users } from "lucide-react";
+import { CalendarDays, Database, LayoutDashboard, MessageSquareText, ShieldCheck, Users } from "lucide-react";
 
 const nav = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
