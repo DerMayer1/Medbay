@@ -1,10 +1,133 @@
 # Medbay
 
-Medbay is a production-oriented full-stack AI clinic operations platform demo. It presents a fictional clinic, **Northstar Clinic**, to showcase patient intake, lead qualification, scheduling workflows, human handoff, knowledge-base management, and admin operations.
+Medbay is an AI-assisted intake infrastructure case study for clinics. It turns unstructured patient conversations into structured, auditable intake cases with deterministic safety policies, handoff workflows, appointment requests, knowledge-base context, and admin review.
 
-## Live Demo
+The demo clinic is fictional: **Northstar Clinic**.
 
-Deploy on Vercel and enable `NEXT_PUBLIC_DEMO_MODE=true` so recruiters can explore the platform without real API keys.
+## Problem
+
+Clinics receive high-volume inbound requests across forms, chat, phone, and messaging channels. The operational problem is not only answering patients quickly. It is converting unstructured requests into structured cases that staff can review safely, prioritize, route, schedule, audit, and close.
+
+## Product Thesis
+
+AI should assist clinic operations by collecting administrative intake data and preparing cases for staff. It should not diagnose, prescribe, interpret clinical results, or replace professional care.
+
+Medbay is built around this boundary:
+
+- The AI assistant supports intake, scheduling, knowledge-base answers, and handoff.
+- Deterministic policies decide when to block, escalate, or ask for clarification.
+- Staff review happens in an operations console centered on Intake Cases.
+
+## Architecture
+
+```text
+Public intake assistant
+  -> /api/chat thin route
+  -> handlePatientMessage use case
+  -> policy engine
+  -> intake extraction
+  -> intake workflow state machine
+  -> AI provider
+  -> repository adapters
+  -> notifications / calendar providers
+  -> audit events
+  -> admin case review console
+```
+
+The business logic lives under `src/features/intake`. Route handlers stay thin, adapters isolate persistence and providers, and the domain layer owns deterministic workflow and policy decisions.
+
+## Domain Model
+
+Core concepts:
+
+- `Patient`
+- `IntakeCase`
+- `IntakeCaseStatus`
+- `Conversation`
+- `Message`
+- `TriageAssessment`
+- `HandoffRequest`
+- `AppointmentRequest`
+- `Appointment`
+- `KnowledgeBaseItem`
+- `AuditEvent`
+
+The Supabase schema keeps the original `leads` table for backwards compatibility, but application code and UI now expose the product domain as Intake Cases.
+
+## Intake Workflow
+
+Supported intake case statuses:
+
+- `opened`
+- `collecting_information`
+- `needs_human_review`
+- `ready_for_scheduling`
+- `appointment_requested`
+- `scheduled`
+- `closed`
+- `discarded`
+
+Workflow transitions are deterministic in `src/features/intake/domain/intake-workflow.ts`. The admin case review console only presents valid next transitions.
+
+## AI Safety and Policy Engine
+
+The policy engine in `src/features/intake/domain/policy-engine.ts` evaluates:
+
+- clinical advice requests
+- diagnosis requests
+- medication requests
+- exam or lab interpretation requests
+- emergency red flags
+- requests for human staff
+- scheduling attempts without contact information
+- low-confidence extraction
+
+Policy decisions return `allow`, `block`, `escalate`, or `ask_clarifying_question`, plus severity, reason, handoff state, and safe response guidance. Assistant output is also validated before it is persisted.
+
+## Demo Mode
+
+Set `NEXT_PUBLIC_DEMO_MODE=true` to run without external credentials.
+
+Demo mode uses adapter-level fallbacks for:
+
+- fake intake cases
+- in-memory conversations
+- simulated AI response
+- mocked email notification
+- mocked calendar behavior
+- in-memory audit records
+
+## Production Tradeoffs
+
+Production-ready pieces:
+
+- typed domain modules
+- deterministic workflow validation
+- deterministic safety policy engine
+- thin route handler for chat
+- Zod request validation
+- Supabase-compatible persistence
+- audit event model
+- rate limiting and same-origin mutation checks
+
+Intentionally mocked or simplified:
+
+- demo storage is in-memory
+- rate limits are process-local
+- notifications are synchronous
+- appointment requests do not require staff approval UI beyond status controls
+- audit log rendering is minimal
+
+For a production clinic deployment, see `docs/production-readiness.md`.
+
+## Engineering Highlights
+
+- Domain-first intake modeling instead of generic chatbot state.
+- Use-case orchestration in `handlePatientMessage`.
+- Explicit interfaces for repositories, AI, notifications, calendar, and audit.
+- Workflow and policy modules covered with Vitest tests.
+- Backwards-compatible migration path from `leads` to Intake Cases.
+- Demo mode works without exposing API keys or requiring recruiter credentials.
 
 ## Tech Stack
 
@@ -18,75 +141,6 @@ Deploy on Vercel and enable `NEXT_PUBLIC_DEMO_MODE=true` so recruiters can explo
 - Google Calendar API
 - Vitest
 - Vercel
-
-## Core Features
-
-- Public SaaS landing page for an AI clinic operations platform.
-- Patient intake assistant with structured fields:
-  - name
-  - contact
-  - reason for visit
-  - preferred service or specialty
-  - urgency level
-  - availability
-  - insurance/payment type
-  - human handoff requirement
-- Admin dashboard for overview, leads, conversations, appointments, knowledge base, and safety settings.
-- Lead status management: `new`, `qualified`, `waiting_human`, `scheduled`, `lost`, `resolved`.
-- Knowledge-base CRUD for services, pricing, schedule, policies, FAQ, and safety.
-- Notification provider with Resend in production and mocked notifications in demo mode.
-- Calendar provider with Google Calendar in production and mocked slots/events in demo mode.
-
-## Architecture
-
-```text
-Public intake UI
-  -> /api/chat
-  -> deterministic safety checks
-  -> OpenAI or demo fallback
-  -> Supabase or in-memory demo store
-  -> notification/calendar provider
-  -> admin dashboard
-```
-
-Backend-only integrations keep API keys out of the browser. Route handlers validate payloads with Zod and enforce rate limits, same-origin mutation checks, admin auth, and no-store responses for sensitive data.
-
-## AI Safety Layer
-
-The assistant is administrative only. It must not provide:
-
-- diagnosis
-- prescriptions
-- treatment plans
-- clinical advice
-- diet prescriptions
-- supplement advice
-- exam or lab interpretation
-
-Unsafe requests are deterministically routed to human handoff before or after model output.
-
-## Data Model
-
-Main tables:
-
-- `leads`
-- `conversations`
-- `messages`
-- `knowledge_items`
-- `appointments`
-- `audit_logs`
-- `profiles`
-
-See `supabase/migrations` for schema and RLS policies.
-
-## Screenshots
-
-Add screenshots after deployment:
-
-- Public intake demo
-- Admin overview
-- Lead detail and conversation history
-- Knowledge-base editor
 
 ## Getting Started
 
@@ -127,21 +181,25 @@ DEFAULT_APPOINTMENT_DURATION_MINUTES=45
 
 ```bash
 npm run test
+npm run lint
 npm run build
 ```
+
+## Screenshots
+
+Add screenshots after deployment:
+
+- Public intake assistant
+- Admin overview
+- Intake Case Review console
+- Knowledge-base editor
 
 ## Roadmap
 
 - Multi-clinic workspaces
-- Role-based admin permissions
-- Durable distributed rate limiting
-- Calendar writeback approvals
-- Analytics for conversion and handoff rates
+- Stronger RBAC for operations roles
+- Durable queue-backed notifications
+- Redis/Upstash-backed rate limiting
+- Calendar slot approval workflow
 - EHR/CRM export adapters
-
-## Engineering Notes
-
-- Demo mode intentionally works without external credentials.
-- OpenAI, Resend, Supabase, and Google Calendar are lazy-initialized.
-- The public assistant uses structured outputs when OpenAI is configured and deterministic fallback otherwise.
-- RLS policies protect admin data in Supabase.
+- Observability dashboards for safety and handoff rates

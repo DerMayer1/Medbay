@@ -33,6 +33,14 @@ const memory = {
   messages: new Map<string, ChatMessage[]>(),
   leads: new Map<string, Partial<Lead> & { id: string }>(),
   appointments: new Map<string, Record<string, unknown>>(),
+  auditEvents: [] as Array<{
+    actor?: string;
+    action: string;
+    entity_type?: string;
+    entity_id?: string;
+    metadata?: Record<string, unknown>;
+    created_at: string;
+  }>,
   knowledge: defaultKnowledge,
 };
 
@@ -299,7 +307,9 @@ export async function getLeadBundle(id: string) {
     const lead = memory.leads.get(id) || demoLeads.find((item) => item.id === id);
     const conversation = Array.from(memory.conversations.values()).find((item) => item.lead_id === id);
     const messages = conversation?.id ? memory.messages.get(conversation.id as string) || [] : [];
-    return { lead, conversation, messages, appointments: [] };
+    const appointments = Array.from(memory.appointments.values()).filter((appointment) => appointment.lead_id === id);
+    const auditEvents = memory.auditEvents.filter((event) => event.entity_id === id);
+    return { lead, conversation, messages, appointments, auditEvents };
   }
 
   const { data: lead, error } = await supabase.from("leads").select("*").eq("id", id).single();
@@ -309,7 +319,8 @@ export async function getLeadBundle(id: string) {
     ? await supabase.from("messages").select("*").eq("conversation_id", conversation.id).order("created_at")
     : { data: [] };
   const { data: appointments } = await supabase.from("appointments").select("*").eq("lead_id", id).order("start_time");
-  return { lead, conversation, messages, appointments };
+  const { data: auditEvents } = await supabase.from("audit_logs").select("*").eq("entity_id", id).order("created_at");
+  return { lead, conversation, messages, appointments, auditEvents };
 }
 
 export async function updateLeadRecord(id: string, input: Partial<Lead> & { notes?: string }) {
@@ -369,7 +380,7 @@ export async function listAppointments() {
         start_time: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
         end_time: new Date(Date.now() + 1000 * 60 * 60 * 25).toISOString(),
         modality: "in_person",
-        status: "pending_confirmation",
+        status: "requested",
         google_event_id: "demo-calendar-event",
       },
     ];
@@ -407,6 +418,14 @@ export async function writeAuditLog(input: {
 }) {
   const supabase = getSupabaseAdmin();
   if (isDemoMode() || !supabase) {
+    memory.auditEvents.push({
+      actor: input.actor || "system",
+      action: input.action,
+      entity_type: input.entityType,
+      entity_id: input.entityId,
+      metadata: input.metadata,
+      created_at: new Date().toISOString(),
+    });
     console.info("demo_audit_log", input);
     return;
   }

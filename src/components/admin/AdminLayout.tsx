@@ -3,7 +3,7 @@ import { CalendarDays, Database, LayoutDashboard, MessageSquareText, Settings, S
 
 const nav = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
-  { href: "/admin/leads", label: "Leads", icon: Users },
+  { href: "/admin/leads", label: "Intake Cases", icon: Users },
   { href: "/admin/conversations", label: "Conversations", icon: MessageSquareText },
   { href: "/admin/appointments", label: "Appointments", icon: CalendarDays },
   { href: "/admin/knowledge", label: "Knowledge Base", icon: Database },

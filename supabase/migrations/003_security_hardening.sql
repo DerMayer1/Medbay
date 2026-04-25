@@ -18,7 +18,14 @@ alter table conversations
     'waiting_human',
     'scheduled',
     'lost',
-    'resolved'
+    'resolved',
+    'opened',
+    'collecting_information',
+    'needs_human_review',
+    'ready_for_scheduling',
+    'appointment_requested',
+    'closed',
+    'discarded'
   ));
 
 alter table messages
@@ -41,7 +48,14 @@ alter table leads
     'waiting_human',
     'scheduled',
     'lost',
-    'resolved'
+    'resolved',
+    'opened',
+    'collecting_information',
+    'needs_human_review',
+    'ready_for_scheduling',
+    'appointment_requested',
+    'closed',
+    'discarded'
   )),
   add constraint leads_consultation_type_check
   check (consultation_type is null or consultation_type in ('first_consultation', 'return', 'unknown')),
@@ -67,9 +81,9 @@ alter table knowledge_items
 
 alter table appointments
   add constraint appointments_status_check
-  check (status in ('pending_confirmation', 'confirmed', 'cancelled', 'completed')),
+  check (status in ('requested', 'under_review', 'slot_offered', 'confirmed', 'cancelled', 'completed', 'pending_confirmation')),
   add constraint appointments_modality_check
-  check (modality is null or modality in ('online', 'in_person', 'unknown'));
+  check (modality is null or modality in ('online', 'in_person', 'virtual', 'phone', 'unknown'));
 
 create or replace function set_updated_at()
 returns trigger as $$

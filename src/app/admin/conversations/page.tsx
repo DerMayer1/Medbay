@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { legacyStatusToIntakeStatus } from "@/features/intake/infrastructure/legacy-mappers";
 import { listConversations } from "@/lib/repository";
 
 export default async function ConversationsPage() {
@@ -13,13 +14,15 @@ export default async function ConversationsPage() {
           <article key={String(conversation.id)} className="rounded-xl border border-white/10 bg-slate-900 p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-cyan-200">{String(conversation.status || "new")}</p>
+                <p className="text-sm font-semibold text-cyan-200">
+                  {legacyStatusToIntakeStatus(String(conversation.status || "opened"))}
+                </p>
                 <h2 className="mt-1 text-lg font-semibold text-white">{String(conversation.summary || "Conversation captured")}</h2>
                 <p className="mt-2 text-sm text-slate-500">Intent: {String(conversation.last_intent || "patient_intake")}</p>
               </div>
               {conversation.lead_id ? (
                 <Link className="text-sm font-semibold text-cyan-200" href={`/admin/leads/${String(conversation.lead_id)}`}>
-                  Open lead
+                  Open intake case
                 </Link>
               ) : null}
             </div>

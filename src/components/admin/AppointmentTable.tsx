@@ -17,7 +17,7 @@ export function AppointmentTable({ appointments }: { appointments: Array<Record<
               <td className="px-4 py-3">{String(appointment.start_time || "Pending")}</td>
               <td className="px-4 py-3">{String(appointment.end_time || "Pending")}</td>
               <td className="px-4 py-3">{String(appointment.modality || "Not provided")}</td>
-              <td className="px-4 py-3">{String(appointment.status || "pending_confirmation")}</td>
+              <td className="px-4 py-3">{String(appointment.status || "requested")}</td>
               <td className="px-4 py-3">{String(appointment.google_event_id || "Mock / not synced")}</td>
             </tr>
           ))}

@@ -7,6 +7,15 @@ alter table leads
   add column if not exists payment_type text,
   add column if not exists handoff_required boolean default false;
 
+alter table appointments
+  alter column status set default 'requested';
+
+alter table conversations
+  alter column status set default 'opened';
+
+alter table leads
+  alter column status set default 'opened';
+
 insert into knowledge_items (category, title, content, active)
 values
   ('services', 'Northstar Clinic services', 'Northstar Clinic is a fictional demo clinic offering primary care, dermatology, orthopedics, cardiology, pediatrics, and behavioral health intake workflows.', true),

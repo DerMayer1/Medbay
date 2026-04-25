@@ -13,6 +13,11 @@ export type Intent =
   | "other";
 
 export type LeadState =
+  | "opened"
+  | "collecting_information"
+  | "needs_human_review"
+  | "ready_for_scheduling"
+  | "appointment_requested"
   | "new"
   | "collecting_name"
   | "collecting_contact"
@@ -24,6 +29,8 @@ export type LeadState =
   | "qualified"
   | "waiting_human"
   | "scheduled"
+  | "closed"
+  | "discarded"
   | "lost"
   | "resolved";
 

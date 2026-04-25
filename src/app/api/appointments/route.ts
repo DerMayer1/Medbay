@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     start_time: payload.startTime,
     end_time: payload.endTime,
     modality: payload.modality,
-    status: payload.createGoogleEvent ? "pending_confirmation" : "pending_confirmation",
+    status: payload.status || "requested",
     google_event_id: googleEventId,
     notes: payload.notes,
   };

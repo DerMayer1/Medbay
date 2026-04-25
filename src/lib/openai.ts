@@ -114,7 +114,7 @@ export function fallbackAssistantResponse(input: AssistantInput): AssistantOutpu
       collecting_urgency: "How urgent is this request: low, medium, high, or urgent?",
       collecting_availability: "What days or times are best for an appointment?",
       collecting_payment: "Will this be insurance or self-pay?",
-      qualified: "I have the intake details needed. I’ll create a qualified lead and route it to clinic operations.",
+      qualified: "I have the intake details needed. I will mark the intake case ready for scheduling and route it to clinic operations.",
     };
     return {
       reply: questions[nextState] || questions.collecting_name,
@@ -131,7 +131,7 @@ export function fallbackAssistantResponse(input: AssistantInput): AssistantOutpu
 
   if (intent === "human_handoff") {
     return {
-      reply: "I’ll route this to the clinic operations team for human follow-up.",
+      reply: "I will route this intake case to the clinic operations team for human follow-up.",
       intent,
       leadState: "waiting_human",
       extractedData: { ...extractedData, handoffRequired: true },

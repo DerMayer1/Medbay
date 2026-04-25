@@ -1,36 +1,69 @@
 # Medbay Architecture
 
+Medbay is organized around a feature-oriented intake domain.
+
 ## Runtime
 
-Medbay uses Next.js App Router route handlers for backend APIs and React components for public and admin surfaces.
+The application uses Next.js App Router for UI and route handlers. React components render the public intake assistant and the admin operations console.
+
+## Feature Boundary
+
+```text
+src/features/intake
+  domain
+    intake-workflow.ts
+    intake-completeness.ts
+    policy-engine.ts
+    appointment-workflow.ts
+    types.ts
+  application
+    handle-patient-message.ts
+    ports.ts
+  infrastructure
+    adapters.ts
+    legacy-mappers.ts
+```
 
 ## Request Flow
 
 ```text
 Patient message
   -> POST /api/chat
-  -> Zod validation
-  -> rate limit and origin checks
-  -> conversation/message persistence
-  -> knowledge-base context loading
-  -> OpenAI structured response or demo fallback
-  -> deterministic guardrails
-  -> lead update
-  -> notification/calendar hooks
-  -> response to UI
+  -> handlePatientMessage
+  -> load/create conversation
+  -> load/create intake case
+  -> persist user message
+  -> policy engine
+  -> intake extraction
+  -> completeness scoring
+  -> workflow decision
+  -> AI provider
+  -> output safety validation
+  -> persist assistant message
+  -> audit events
+  -> notification provider
+  -> UI response
 ```
+
+## Adapter Boundary
+
+The use case depends on interfaces:
+
+- `CaseRepository`
+- `PatientRepository`
+- `ConversationRepository`
+- `KnowledgeBaseRepository`
+- `AuditLogger`
+- `AIProvider`
+- `NotificationProvider`
+- `CalendarProvider`
+
+Demo mode is selected through adapter construction. Production integrations use Supabase, OpenAI, Resend, and Google Calendar behind the same use-case boundary.
 
 ## Persistence
 
-Supabase stores profiles, conversations, messages, leads, knowledge items, appointments, and audit logs. Demo mode uses in-memory data and seed records so the app can run without credentials.
+Supabase stores profiles, conversations, messages, leads, knowledge items, appointments, and audit logs. The `leads` table remains for backwards compatibility, while application code maps it to `IntakeCase`.
 
-## Providers
+## Security
 
-- OpenAI: structured administrative assistant output.
-- Resend: notification emails.
-- Google Calendar: availability and event creation.
-- Mock providers: enabled when env vars are missing or demo mode is enabled.
-
-## Admin Security
-
-Admin routes require Supabase Auth and a `profiles.role = admin` record when Supabase is configured. API responses are no-store and protected by same-origin checks for mutations.
+Admin routes use Supabase Auth when configured. Mutating routes enforce same-origin checks. API responses containing operational data are returned with `Cache-Control: no-store`.

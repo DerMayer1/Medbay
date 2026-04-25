@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-
-const statuses = ["new", "qualified", "waiting_human", "scheduled", "lost", "resolved"];
+import { getAllowedNextStatuses } from "@/features/intake/domain/intake-workflow";
+import type { IntakeCaseStatus } from "@/features/intake/domain/types";
+import { legacyStatusToIntakeStatus } from "@/features/intake/infrastructure/legacy-mappers";
 
 export function LeadTable({ leads }: { leads: Array<Record<string, unknown>> }) {
   const [localLeads, setLocalLeads] = useState(leads);
 
-  async function updateStatus(id: string, status: string) {
+  async function updateStatus(id: string, status: IntakeCaseStatus) {
     setLocalLeads((current) => current.map((lead) => (lead.id === id ? { ...lead, status } : lead)));
     await fetch(`/api/leads/${id}`, {
       method: "PATCH",
@@ -27,7 +28,7 @@ export function LeadTable({ leads }: { leads: Array<Record<string, unknown>> }) 
             <th className="px-4 py-3 font-semibold">Reason</th>
             <th className="px-4 py-3 font-semibold">Service</th>
             <th className="px-4 py-3 font-semibold">Urgency</th>
-            <th className="px-4 py-3 font-semibold">Status</th>
+            <th className="px-4 py-3 font-semibold">Case status</th>
             <th className="px-4 py-3 font-semibold">Action</th>
           </tr>
         </thead>
@@ -40,21 +41,28 @@ export function LeadTable({ leads }: { leads: Array<Record<string, unknown>> }) 
               <td className="px-4 py-3 text-slate-400">{String(lead.preferred_service || lead.consultation_type || "Not routed")}</td>
               <td className="px-4 py-3 text-slate-400">{String(lead.urgency_level || "unknown")}</td>
               <td className="px-4 py-3">
+                {(() => {
+                  const status = legacyStatusToIntakeStatus(String(lead.status || "opened"));
+                  const options = getAllowedNextStatuses(status);
+                  return (
                 <select
-                  value={String(lead.status || "new")}
-                  onChange={(event) => updateStatus(String(lead.id), event.target.value)}
+                  value={status}
+                  onChange={(event) => updateStatus(String(lead.id), event.target.value as IntakeCaseStatus)}
                   className="rounded-md border border-white/10 bg-slate-950 px-2 py-1 text-xs font-semibold text-cyan-100"
                 >
-                  {statuses.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
+                  <option value={status}>{status}</option>
+                  {options.map((nextStatus) => (
+                    <option key={nextStatus} value={nextStatus}>
+                      {nextStatus}
                     </option>
                   ))}
                 </select>
+                  );
+                })()}
               </td>
               <td className="px-4 py-3">
                 <Link className="font-semibold text-cyan-200" href={`/admin/leads/${String(lead.id)}`}>
-                  Review
+                  Review case
                 </Link>
               </td>
             </tr>

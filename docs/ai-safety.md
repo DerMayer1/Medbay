@@ -2,12 +2,13 @@
 
 Medbay treats AI as an administrative operations assistant, not a clinician.
 
-## Disallowed Responses
+## Disallowed AI Behavior
 
 The assistant must not provide:
 
 - diagnosis
 - prescriptions
+- medication guidance
 - treatment plans
 - clinical advice
 - diet prescriptions
@@ -15,23 +16,34 @@ The assistant must not provide:
 - lab, imaging, or exam interpretation
 - outcome guarantees
 
-## Allowed Responses
+## Policy Engine
 
-The assistant may:
+Deterministic policy evaluation lives in `src/features/intake/domain/policy-engine.ts`.
 
-- collect intake information
-- answer administrative questions from the knowledge base
-- support scheduling workflow
-- summarize conversation context
-- route to human staff
+The policy engine detects:
 
-## Implementation
+- clinical advice requests
+- diagnosis requests
+- medication requests
+- exam or lab interpretation requests
+- emergency red flags
+- patient requests for staff
+- scheduling attempts without contact information
+- low-confidence extraction
 
-Safety is enforced in two places:
+It returns:
 
-1. System prompt constraints for model behavior.
-2. Deterministic guardrails in `src/lib/guardrails.ts` that classify unsafe content and override output with a handoff response.
+- `decision`: `allow`, `block`, `escalate`, or `ask_clarifying_question`
+- `severity`: `info`, `warning`, or `critical`
+- `reason`
+- `handoffRequired`
+- `safeResponseHint`
+- `flags`
 
-## Default Unsafe Reply
+## Input and Output Safety
 
-The user is told that Medbay cannot provide clinical guidance and can route the request to clinic staff.
+The use case evaluates the user message before AI generation. It also validates assistant output before persistence. Unsafe output is replaced with the deterministic safe response hint and the case is routed for human review when needed.
+
+## Human Handoff
+
+Unsafe or ambiguous cases are moved to `needs_human_review` and audit events are written for policy evaluation and handoff.

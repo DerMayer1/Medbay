@@ -23,7 +23,23 @@ export const leadPatchSchema = z.object({
   availability: z.string().optional(),
   payment_type: z.enum(["insurance", "self_pay", "unknown"]).optional(),
   handoff_required: z.boolean().optional(),
-  status: z.enum(["new", "qualified", "waiting_human", "scheduled", "lost", "resolved"]).optional(),
+  status: z
+    .enum([
+      "opened",
+      "collecting_information",
+      "needs_human_review",
+      "ready_for_scheduling",
+      "appointment_requested",
+      "scheduled",
+      "closed",
+      "discarded",
+      "new",
+      "qualified",
+      "waiting_human",
+      "lost",
+      "resolved",
+    ])
+    .optional(),
   notes: z.string().optional(),
 });
 
@@ -45,6 +61,7 @@ export const appointmentPayloadSchema = z.object({
   startTime: z.string().datetime().optional(),
   endTime: z.string().datetime().optional(),
   modality: z.string().optional(),
+  status: z.enum(["requested", "under_review", "slot_offered", "confirmed", "cancelled", "completed"]).optional(),
   notes: z.string().optional(),
   createGoogleEvent: z.boolean().optional(),
 });
