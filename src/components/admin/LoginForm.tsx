@@ -31,7 +31,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
       <label className="block text-sm font-medium">
-        E-mail
+        Email
         <input
           name="email"
           type="email"
@@ -40,7 +40,7 @@ export function LoginForm() {
         />
       </label>
       <label className="block text-sm font-medium">
-        Senha
+        Password
         <input
           name="password"
           type="password"
@@ -54,7 +54,7 @@ export function LoginForm() {
         disabled={isLoading}
         className="w-full rounded-md bg-[#176b4d] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
       >
-        Entrar
+        Sign in
       </button>
     </form>
   );

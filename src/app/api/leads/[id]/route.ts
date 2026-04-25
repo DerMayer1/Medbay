@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { getLeadBundle, writeAuditLog } from "@/lib/repository";
+import { getLeadBundle, updateLeadRecord, writeAuditLog } from "@/lib/repository";
 import { enforceRateLimit, noStoreJson, rejectCrossOriginMutation, requireAdmin } from "@/lib/security";
 import { leadPatchSchema } from "@/lib/validators";
 
@@ -24,19 +23,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const { id } = await params;
   const input = leadPatchSchema.parse(await request.json());
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
+  try {
+    const data = await updateLeadRecord(id, input);
     await writeAuditLog({ action: "lead.updated", entityType: "lead", entityId: id, metadata: input });
-    return noStoreJson({ id, ...input });
+    return noStoreJson(data);
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update lead" }, { status: 400 });
   }
-
-  const { data, error } = await supabase
-    .from("leads")
-    .update({ ...input, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .select("*")
-    .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  await writeAuditLog({ action: "lead.updated", entityType: "lead", entityId: id, metadata: input });
-  return noStoreJson(data);
 }

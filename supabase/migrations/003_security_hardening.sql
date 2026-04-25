@@ -8,16 +8,17 @@ alter table conversations
     'new',
     'chatting',
     'collecting_name',
-    'collecting_consultation_type',
-    'collecting_goal',
-    'collecting_modality',
-    'collecting_schedule_preference',
     'collecting_contact',
-    'ready_for_human_confirmation',
-    'appointment_suggested',
-    'appointment_confirmed',
-    'human_handoff',
-    'closed'
+    'collecting_reason',
+    'collecting_service',
+    'collecting_urgency',
+    'collecting_availability',
+    'collecting_payment',
+    'qualified',
+    'waiting_human',
+    'scheduled',
+    'lost',
+    'resolved'
   ));
 
 alter table messages
@@ -30,38 +31,38 @@ alter table leads
     'new',
     'chatting',
     'collecting_name',
-    'collecting_consultation_type',
-    'collecting_goal',
-    'collecting_modality',
-    'collecting_schedule_preference',
     'collecting_contact',
-    'ready_for_human_confirmation',
-    'appointment_suggested',
-    'appointment_confirmed',
-    'human_handoff',
-    'closed'
+    'collecting_reason',
+    'collecting_service',
+    'collecting_urgency',
+    'collecting_availability',
+    'collecting_payment',
+    'qualified',
+    'waiting_human',
+    'scheduled',
+    'lost',
+    'resolved'
   )),
   add constraint leads_consultation_type_check
   check (consultation_type is null or consultation_type in ('first_consultation', 'return', 'unknown')),
   add constraint leads_modality_check
   check (modality is null or modality in ('online', 'in_person', 'unknown')),
   add constraint leads_source_check
-  check (source in ('landing_page', 'instagram_bio', 'manual'));
+  check (source in ('landing_page', 'demo', 'manual')),
+  add constraint leads_urgency_level_check
+  check (urgency_level is null or urgency_level in ('low', 'medium', 'high', 'urgent', 'unknown')),
+  add constraint leads_payment_type_check
+  check (payment_type is null or payment_type in ('insurance', 'self_pay', 'unknown'));
 
 alter table knowledge_items
   add constraint knowledge_items_category_check
   check (category in (
-    'prices',
-    'location',
-    'hours',
-    'online_consultation',
-    'in_person_consultation',
-    'first_consultation',
-    'return_consultation',
-    'payment',
-    'cancellation',
-    'exams',
-    'general'
+    'services',
+    'pricing',
+    'schedule',
+    'policies',
+    'faq',
+    'safety'
   ));
 
 alter table appointments

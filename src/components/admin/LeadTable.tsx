@@ -1,42 +1,68 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+
+const statuses = ["new", "qualified", "waiting_human", "scheduled", "lost", "resolved"];
 
 export function LeadTable({ leads }: { leads: Array<Record<string, unknown>> }) {
+  const [localLeads, setLocalLeads] = useState(leads);
+
+  async function updateStatus(id: string, status: string) {
+    setLocalLeads((current) => current.map((lead) => (lead.id === id ? { ...lead, status } : lead)));
+    await fetch(`/api/leads/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+  }
+
   return (
-    <div className="overflow-hidden rounded-lg border border-[#d9ded6] bg-white">
-      <table className="w-full min-w-[760px] text-left text-sm">
-        <thead className="bg-[#eef4ec] text-[#41504b]">
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-900">
+      <table className="w-full min-w-[900px] text-left text-sm">
+        <thead className="bg-white/5 text-slate-300">
           <tr>
-            <th className="px-4 py-3 font-semibold">Nome</th>
-            <th className="px-4 py-3 font-semibold">Contato</th>
-            <th className="px-4 py-3 font-semibold">Objetivo</th>
-            <th className="px-4 py-3 font-semibold">Modalidade</th>
+            <th className="px-4 py-3 font-semibold">Patient</th>
+            <th className="px-4 py-3 font-semibold">Contact</th>
+            <th className="px-4 py-3 font-semibold">Reason</th>
+            <th className="px-4 py-3 font-semibold">Service</th>
+            <th className="px-4 py-3 font-semibold">Urgency</th>
             <th className="px-4 py-3 font-semibold">Status</th>
-            <th className="px-4 py-3 font-semibold">Ação</th>
+            <th className="px-4 py-3 font-semibold">Action</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#edf0ea]">
-          {leads.map((lead) => (
+        <tbody className="divide-y divide-white/10">
+          {localLeads.map((lead) => (
             <tr key={String(lead.id)}>
-              <td className="px-4 py-3">{String(lead.name || "Sem nome")}</td>
-              <td className="px-4 py-3">{String(lead.phone || lead.email || "Não informado")}</td>
-              <td className="px-4 py-3">{String(lead.goal || "Não informado")}</td>
-              <td className="px-4 py-3">{String(lead.modality || "Não informada")}</td>
+              <td className="px-4 py-3 text-white">{String(lead.name || "Unnamed patient")}</td>
+              <td className="px-4 py-3 text-slate-400">{String(lead.contact || lead.phone || lead.email || "Not provided")}</td>
+              <td className="px-4 py-3 text-slate-400">{String(lead.reason_for_visit || lead.goal || "Not provided")}</td>
+              <td className="px-4 py-3 text-slate-400">{String(lead.preferred_service || lead.consultation_type || "Not routed")}</td>
+              <td className="px-4 py-3 text-slate-400">{String(lead.urgency_level || "unknown")}</td>
               <td className="px-4 py-3">
-                <span className="rounded-md bg-[#eef4ec] px-2 py-1 text-xs font-semibold text-[#176b4d]">
-                  {String(lead.status || "new")}
-                </span>
+                <select
+                  value={String(lead.status || "new")}
+                  onChange={(event) => updateStatus(String(lead.id), event.target.value)}
+                  className="rounded-md border border-white/10 bg-slate-950 px-2 py-1 text-xs font-semibold text-cyan-100"
+                >
+                  {statuses.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
               </td>
               <td className="px-4 py-3">
-                <Link className="font-semibold text-[#176b4d]" href={`/admin/leads/${String(lead.id)}`}>
-                  Ver conversa
+                <Link className="font-semibold text-cyan-200" href={`/admin/leads/${String(lead.id)}`}>
+                  Review
                 </Link>
               </td>
             </tr>
           ))}
-          {leads.length === 0 ? (
+          {localLeads.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-4 py-8 text-center text-[#66746f]">
-                Nenhum lead registrado ainda.
+              <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                No intake leads yet.
               </td>
             </tr>
           ) : null}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isDemoMode } from "@/lib/constants";
 import { getServerSupabase } from "@/lib/supabaseServer";
 
 type RateLimitConfig = {
@@ -28,7 +29,7 @@ export function getClientIp(request: NextRequest) {
 }
 
 export function getVisitorKey(request: NextRequest, scope: string) {
-  const visitorId = request.cookies.get("juliana_visitor_id")?.value;
+  const visitorId = request.cookies.get("medbay_visitor_id")?.value;
   return `${scope}:${visitorId || getClientIp(request)}`;
 }
 
@@ -65,7 +66,7 @@ export function rateLimitResponse(limit: number, resetAt: number) {
   return NextResponse.json(
     {
       error: "rate_limited",
-      message: "Muitas solicitações em pouco tempo. Tente novamente em instantes.",
+      message: "Too many requests in a short period. Try again shortly.",
     },
     {
       status: 429,
@@ -100,6 +101,8 @@ export function rejectCrossOriginMutation(request: NextRequest) {
 }
 
 export async function requireAdmin() {
+  if (isDemoMode()) return null;
+
   const hasSupabaseEnv = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
   if (!hasSupabaseEnv) {

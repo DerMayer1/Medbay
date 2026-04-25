@@ -1,19 +1,94 @@
-# Secretária Virtual Juliana Pansardi
+# Medbay
 
-Aplicação fullstack em Next.js para atendimento administrativo, pré-agendamento e handoff humano para consultório de nutrição.
+Medbay is a production-oriented full-stack AI clinic operations platform demo. It presents a fictional clinic, **Northstar Clinic**, to showcase patient intake, lead qualification, scheduling workflows, human handoff, knowledge-base management, and admin operations.
 
-## Stack
+## Live Demo
+
+Deploy on Vercel and enable `NEXT_PUBLIC_DEMO_MODE=true` so recruiters can explore the platform without real API keys.
+
+## Tech Stack
 
 - Next.js App Router
-- React
+- TypeScript
 - Tailwind CSS
-- Supabase
+- Supabase / PostgreSQL
 - OpenAI API
+- Zod
 - Resend
 - Google Calendar API
 - Vitest
+- Vercel
 
-## Rodando localmente
+## Core Features
+
+- Public SaaS landing page for an AI clinic operations platform.
+- Patient intake assistant with structured fields:
+  - name
+  - contact
+  - reason for visit
+  - preferred service or specialty
+  - urgency level
+  - availability
+  - insurance/payment type
+  - human handoff requirement
+- Admin dashboard for overview, leads, conversations, appointments, knowledge base, and safety settings.
+- Lead status management: `new`, `qualified`, `waiting_human`, `scheduled`, `lost`, `resolved`.
+- Knowledge-base CRUD for services, pricing, schedule, policies, FAQ, and safety.
+- Notification provider with Resend in production and mocked notifications in demo mode.
+- Calendar provider with Google Calendar in production and mocked slots/events in demo mode.
+
+## Architecture
+
+```text
+Public intake UI
+  -> /api/chat
+  -> deterministic safety checks
+  -> OpenAI or demo fallback
+  -> Supabase or in-memory demo store
+  -> notification/calendar provider
+  -> admin dashboard
+```
+
+Backend-only integrations keep API keys out of the browser. Route handlers validate payloads with Zod and enforce rate limits, same-origin mutation checks, admin auth, and no-store responses for sensitive data.
+
+## AI Safety Layer
+
+The assistant is administrative only. It must not provide:
+
+- diagnosis
+- prescriptions
+- treatment plans
+- clinical advice
+- diet prescriptions
+- supplement advice
+- exam or lab interpretation
+
+Unsafe requests are deterministically routed to human handoff before or after model output.
+
+## Data Model
+
+Main tables:
+
+- `leads`
+- `conversations`
+- `messages`
+- `knowledge_items`
+- `appointments`
+- `audit_logs`
+- `profiles`
+
+See `supabase/migrations` for schema and RLS policies.
+
+## Screenshots
+
+Add screenshots after deployment:
+
+- Public intake demo
+- Admin overview
+- Lead detail and conversation history
+- Knowledge-base editor
+
+## Getting Started
 
 ```bash
 npm install
@@ -21,66 +96,52 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Acesse `http://localhost:3000`.
+Open `http://localhost:3000`.
 
-## Variáveis
+## Environment Variables
 
-Preencha `.env.local` com:
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_DEMO_MODE=true
 
-- `OPENAI_API_KEY` e `OPENAI_MODEL`
-- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-- `RESEND_API_KEY`, `TEAM_EMAIL`, `FROM_EMAIL`
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`, `GOOGLE_CALENDAR_ID`
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
 
-Sem credenciais, o app ainda abre e usa respostas administrativas determinísticas, mas não persiste em Supabase nem envia e-mail real.
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 
-## Supabase
+RESEND_API_KEY=
+TEAM_EMAIL=
+FROM_EMAIL=
 
-1. Crie um projeto no Supabase.
-2. Execute as migrations em `supabase/migrations`.
-3. Ative Supabase Auth com e-mail/senha.
-4. Crie um registro em `profiles` para o usuário administrador.
-
-As rotas de backend usam `SUPABASE_SERVICE_ROLE_KEY`, então essa chave nunca deve ser exposta no frontend.
-
-## OpenAI
-
-O endpoint `/api/chat` chama a OpenAI apenas no backend. A saída é estruturada e depois passa por guardrails determinísticos para bloquear pedidos clínicos, dieta, suplementos, exames e diagnóstico.
-
-## Resend
-
-Configure `RESEND_API_KEY`, `FROM_EMAIL` e `TEAM_EMAIL`. O sistema tenta notificar a equipe quando há lead qualificado ou handoff humano.
-
-## Google Calendar
-
-O MVP opera em modo seguro:
-
-- consulta disponibilidade via `/api/calendar/availability`;
-- cria agendamentos internos via `/api/appointments`;
-- só cria evento real se `createGoogleEvent` for enviado e as credenciais existirem.
-
-## Scripts
-
-```bash
-npm run dev
-npm run build
-npm run test
-npm run lint
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REFRESH_TOKEN=
+GOOGLE_CALENDAR_ID=
+CLINIC_TIMEZONE=America/New_York
+DEFAULT_APPOINTMENT_DURATION_MINUTES=45
 ```
 
-## Deploy na Vercel
+## Running Tests
 
-1. Importe o projeto na Vercel.
-2. Configure todas as variáveis de ambiente.
-3. Garanta que as migrations do Supabase foram aplicadas.
-4. Rode o deploy.
+```bash
+npm run test
+npm run build
+```
 
-## Escopo implementado
+## Roadmap
 
-- Landing page responsiva com chat próprio.
-- Endpoint `/api/chat` com persistência, knowledge base, IA, guardrails e notificação.
-- CRUD básico de knowledge base.
-- Painel `/admin` com dashboard, leads, conversas, agenda, base e configurações.
-- Integração segura com disponibilidade de Google Calendar.
-- Migrations Supabase.
-- Testes unitários de guardrails, estado, validação e e-mail.
+- Multi-clinic workspaces
+- Role-based admin permissions
+- Durable distributed rate limiting
+- Calendar writeback approvals
+- Analytics for conversion and handoff rates
+- EHR/CRM export adapters
+
+## Engineering Notes
+
+- Demo mode intentionally works without external credentials.
+- OpenAI, Resend, Supabase, and Google Calendar are lazy-initialized.
+- The public assistant uses structured outputs when OpenAI is configured and deterministic fallback otherwise.
+- RLS policies protect admin data in Supabase.

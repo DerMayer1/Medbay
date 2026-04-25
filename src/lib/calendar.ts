@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { isDemoMode } from "@/lib/constants";
 
 export type Slot = {
   start: string;
@@ -6,6 +7,7 @@ export type Slot = {
 };
 
 function getCalendarClient() {
+  if (isDemoMode() || process.env.NODE_ENV === "test") return null;
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
@@ -19,7 +21,7 @@ function getCalendarClient() {
 
 export async function getAvailableSlots(startDate?: string, endDate?: string): Promise<Slot[]> {
   const calendar = getCalendarClient();
-  const timeZone = process.env.CLINIC_TIMEZONE || "America/Sao_Paulo";
+  const timeZone = process.env.CLINIC_TIMEZONE || "America/New_York";
   const duration = Number(process.env.DEFAULT_APPOINTMENT_DURATION_MINUTES || 60);
 
   const start = startDate ? new Date(startDate) : new Date();
@@ -50,6 +52,12 @@ export async function getAvailableSlots(startDate?: string, endDate?: string): P
   });
 }
 
+export async function getMockAvailableSlots(startDate?: string, endDate?: string) {
+  const start = startDate ? new Date(startDate) : new Date();
+  const end = endDate ? new Date(endDate) : new Date(start.getTime() + 5 * 24 * 60 * 60 * 1000);
+  return buildBusinessHourSlots(start, end, 45).slice(0, 8);
+}
+
 function buildBusinessHourSlots(start: Date, end: Date, durationMinutes: number) {
   const slots: Slot[] = [];
   const cursor = new Date(start);
@@ -75,15 +83,17 @@ export async function createCalendarEvent(input: {
   endTime: string;
 }) {
   const calendar = getCalendarClient();
-  if (!calendar || !process.env.GOOGLE_CALENDAR_ID) return { googleEventId: undefined };
+  if (!calendar || !process.env.GOOGLE_CALENDAR_ID) {
+    return { googleEventId: `mock-${Date.now()}` };
+  }
 
   const event = await calendar.events.insert({
     calendarId: process.env.GOOGLE_CALENDAR_ID,
     requestBody: {
       summary: input.summary,
       description: input.description,
-      start: { dateTime: input.startTime, timeZone: process.env.CLINIC_TIMEZONE || "America/Sao_Paulo" },
-      end: { dateTime: input.endTime, timeZone: process.env.CLINIC_TIMEZONE || "America/Sao_Paulo" },
+      start: { dateTime: input.startTime, timeZone: process.env.CLINIC_TIMEZONE || "America/New_York" },
+      end: { dateTime: input.endTime, timeZone: process.env.CLINIC_TIMEZONE || "America/New_York" },
     },
   });
 

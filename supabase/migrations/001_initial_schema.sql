@@ -12,6 +12,13 @@ create table if not exists leads (
   name text,
   email text,
   phone text,
+  contact text,
+  reason_for_visit text,
+  preferred_service text,
+  urgency_level text,
+  availability text,
+  payment_type text,
+  handoff_required boolean default false,
   consultation_type text,
   goal text,
   modality text,
@@ -89,6 +96,6 @@ create index if not exists appointments_start_time_idx on appointments(start_tim
 
 insert into knowledge_items (category, title, content, active)
 values
-  ('prices', 'Valores', 'Valores ainda não cadastrados. Quando perguntarem, informar que a equipe confirmará por contato humano.', true),
-  ('general', 'Escopo da assistente', 'A assistente atua apenas em dúvidas administrativas, triagem e pré-agendamento. Perguntas clínicas devem ser encaminhadas para consulta ou equipe humana.', true)
+  ('services', 'Northstar Clinic services', 'Northstar Clinic is a fictional demo clinic offering primary care, dermatology, orthopedics, cardiology, pediatrics, and behavioral health intake workflows.', true),
+  ('safety', 'AI safety scope', 'The assistant handles administrative intake, scheduling support, knowledge-base answers, and human handoff. It does not provide diagnosis, prescriptions, clinical advice, diet plans, supplement guidance, or exam interpretation.', true)
 on conflict do nothing;

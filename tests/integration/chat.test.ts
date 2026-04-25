@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { fallbackAssistantResponse } from "@/lib/openai";
 
-describe("chat flow", () => {
-  it("creates a scheduling reply without OpenAI credentials", () => {
+describe("demo chat flow", () => {
+  it("creates an intake reply without OpenAI credentials", () => {
     const output = fallbackAssistantResponse({
-      message: "Quero agendar uma consulta",
+      message: "Start a new patient intake",
       messages: [],
       knowledge: "",
       currentLeadState: "new",
     });
 
-    expect(output.intent).toBe("schedule_appointment");
-    expect(output.reply).toContain("nome completo");
+    expect(output.intent).toBe("patient_intake");
+    expect(output.reply).toContain("full name");
   });
 });

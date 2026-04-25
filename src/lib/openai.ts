@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { isDemoMode } from "@/lib/constants";
 import { extractLeadByState } from "@/lib/extraction";
 import { classifyIntent } from "@/lib/guardrails";
 import { getNextLeadState } from "@/lib/leadState";
@@ -8,12 +9,26 @@ import type { AssistantInput, AssistantOutput } from "@/types/assistant";
 let client: OpenAI | null = null;
 
 function getOpenAIClient() {
-  if (!process.env.OPENAI_API_KEY) return null;
-  if (!client) {
-    client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  }
+  if (!process.env.OPENAI_API_KEY || isDemoMode()) return null;
+  if (!client) client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   return client;
 }
+
+const leadStates = [
+  "new",
+  "collecting_name",
+  "collecting_contact",
+  "collecting_reason",
+  "collecting_service",
+  "collecting_urgency",
+  "collecting_availability",
+  "collecting_payment",
+  "qualified",
+  "waiting_human",
+  "scheduled",
+  "lost",
+  "resolved",
+];
 
 const assistantSchema = {
   type: "object",
@@ -33,39 +48,21 @@ const assistantSchema = {
     intent: {
       type: "string",
       enum: [
+        "patient_intake",
         "schedule_appointment",
         "reschedule_appointment",
         "cancel_appointment",
-        "ask_price",
+        "ask_pricing",
         "ask_location",
-        "ask_online_or_in_person",
-        "ask_how_it_works",
-        "ask_return_policy",
-        "send_exams",
+        "ask_services",
+        "ask_hours",
         "clinical_question",
         "human_handoff",
         "complaint",
         "other",
       ],
     },
-    leadState: {
-      type: "string",
-      enum: [
-        "new",
-        "chatting",
-        "collecting_name",
-        "collecting_consultation_type",
-        "collecting_goal",
-        "collecting_modality",
-        "collecting_schedule_preference",
-        "collecting_contact",
-        "ready_for_human_confirmation",
-        "appointment_suggested",
-        "appointment_confirmed",
-        "human_handoff",
-        "closed",
-      ],
-    },
+    leadState: { type: "string", enum: leadStates },
     extractedData: {
       type: "object",
       additionalProperties: false,
@@ -73,10 +70,13 @@ const assistantSchema = {
         name: { type: "string" },
         email: { type: "string" },
         phone: { type: "string" },
-        consultationType: { type: "string", enum: ["first_consultation", "return", "unknown"] },
-        goal: { type: "string" },
-        modality: { type: "string", enum: ["online", "in_person", "unknown"] },
-        schedulePreference: { type: "string" },
+        contact: { type: "string" },
+        reasonForVisit: { type: "string" },
+        preferredService: { type: "string" },
+        urgencyLevel: { type: "string", enum: ["low", "medium", "high", "urgent", "unknown"] },
+        availability: { type: "string" },
+        paymentType: { type: "string", enum: ["insurance", "self_pay", "unknown"] },
+        handoffRequired: { type: "boolean" },
       },
     },
     handoffRequired: { type: "boolean" },
@@ -92,37 +92,38 @@ export function fallbackAssistantResponse(input: AssistantInput): AssistantOutpu
   const intent = classifyIntent(input.message);
   const extractedData = extractLeadByState(input.message, input.currentLeadState);
   const nextState = getNextLeadState(input.currentLeadState, extractedData, intent);
-
-  const isSchedulingFlow =
+  const isIntakeFlow =
+    intent === "patient_intake" ||
     intent === "schedule_appointment" ||
     [
       "collecting_name",
-      "collecting_consultation_type",
-      "collecting_goal",
-      "collecting_modality",
-      "collecting_schedule_preference",
       "collecting_contact",
+      "collecting_reason",
+      "collecting_service",
+      "collecting_urgency",
+      "collecting_availability",
+      "collecting_payment",
     ].includes(input.currentLeadState);
 
-  if (isSchedulingFlow) {
+  if (isIntakeFlow) {
     const questions: Record<string, string> = {
-      collecting_name: "Claro. Para começar, me envie seu nome completo.",
-      collecting_consultation_type: "Perfeito. É primeira consulta ou retorno?",
-      collecting_goal: "Qual é o principal objetivo do atendimento?",
-      collecting_modality: "Você prefere atendimento online ou presencial?",
-      collecting_schedule_preference: "Qual dia ou período costuma funcionar melhor para você?",
-      collecting_contact: "Para a equipe retornar, me envie seu telefone ou e-mail.",
-      ready_for_human_confirmation:
-        "Recebi as informações principais. Vou encaminhar para a equipe confirmar os horários disponíveis.",
+      collecting_name: "I can help with intake. What is the patient's full name?",
+      collecting_contact: "What is the best contact information for follow-up?",
+      collecting_reason: "What is the main reason for the visit?",
+      collecting_service: "Which service or specialty should this be routed to?",
+      collecting_urgency: "How urgent is this request: low, medium, high, or urgent?",
+      collecting_availability: "What days or times are best for an appointment?",
+      collecting_payment: "Will this be insurance or self-pay?",
+      qualified: "I have the intake details needed. I’ll create a qualified lead and route it to clinic operations.",
     };
     return {
-      reply: questions[nextState] ?? questions.collecting_name,
-      intent: intent === "other" ? "schedule_appointment" : intent,
+      reply: questions[nextState] || questions.collecting_name,
+      intent: intent === "other" ? "patient_intake" : intent,
       leadState: nextState,
       extractedData,
       handoffRequired: false,
-      shouldNotifyTeam: nextState === "ready_for_human_confirmation",
-      shouldCheckCalendar: nextState === "ready_for_human_confirmation",
+      shouldNotifyTeam: nextState === "qualified",
+      shouldCheckCalendar: nextState === "qualified",
       shouldCreateAppointment: false,
       summary: input.message,
     };
@@ -130,10 +131,10 @@ export function fallbackAssistantResponse(input: AssistantInput): AssistantOutpu
 
   if (intent === "human_handoff") {
     return {
-      reply: "Sem problema. Vou encaminhar sua mensagem para a equipe da Juliana retornar.",
+      reply: "I’ll route this to the clinic operations team for human follow-up.",
       intent,
-      leadState: "human_handoff",
-      extractedData,
+      leadState: "waiting_human",
+      extractedData: { ...extractedData, handoffRequired: true },
       handoffRequired: true,
       handoffReason: "human_handoff",
       shouldNotifyTeam: true,
@@ -145,7 +146,7 @@ export function fallbackAssistantResponse(input: AssistantInput): AssistantOutpu
 
   return {
     reply:
-      "Posso ajudar com agendamento, valores, modalidades, endereço e dúvidas administrativas. Se quiser marcar uma consulta, posso coletar seus dados agora.",
+      "I can help with intake, scheduling questions, clinic services, pricing policies, and human handoff. Would you like to start a new patient intake?",
     intent,
     leadState: nextState,
     extractedData,
@@ -161,23 +162,28 @@ export async function generateAssistantResponse(input: AssistantInput): Promise<
   const openai = getOpenAIClient();
   if (!openai) return fallbackAssistantResponse(input);
 
-  const response = await openai.responses.create({
-    model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-    instructions: SYSTEM_PROMPT,
-    input: `Base de conhecimento administrativa:\n${input.knowledge}\n\nEstado atual do lead: ${input.currentLeadState}\n\nHistórico recente:\n${input.messages
-      .map((message) => `${message.role}: ${message.content}`)
-      .join("\n")}\n\nMensagem atual: ${input.message}`,
-    text: {
-      format: {
-        type: "json_schema",
-        name: "assistant_output",
-        strict: false,
-        schema: assistantSchema,
+  try {
+    const response = await openai.responses.create({
+      model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
+      instructions: SYSTEM_PROMPT,
+      input: `Clinic knowledge base:\n${input.knowledge}\n\nCurrent intake state: ${input.currentLeadState}\n\nRecent conversation:\n${input.messages
+        .map((message) => `${message.role}: ${message.content}`)
+        .join("\n")}\n\nCurrent user message: ${input.message}`,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "assistant_output",
+          strict: false,
+          schema: assistantSchema,
+        },
       },
-    },
-  });
+    });
 
-  const raw = response.output_text;
-  if (!raw) return fallbackAssistantResponse(input);
-  return JSON.parse(raw) as AssistantOutput;
+    const raw = response.output_text;
+    if (!raw) return fallbackAssistantResponse(input);
+    return JSON.parse(raw) as AssistantOutput;
+  } catch (error) {
+    console.error("openai_response_error", error);
+    return fallbackAssistantResponse(input);
+  }
 }

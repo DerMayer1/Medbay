@@ -2,38 +2,35 @@ import { CLINICAL_HANDOFF_REPLY } from "@/lib/constants";
 import type { AssistantOutput } from "@/types/assistant";
 import type { Intent } from "@/types/lead";
 
-const clinicalPatterns = [
-  /\bdieta\b/i,
-  /\bcard[aá]pio\b/i,
-  /\bplano alimentar\b/i,
-  /\bsuplement/i,
-  /\bcreatina\b/i,
-  /\bwhey\b/i,
-  /\bcaloria/i,
-  /\bmacro/i,
-  /\bexame/i,
-  /\bdiagn[oó]st/i,
-  /\bmedicamento/i,
-  /\brem[eé]dio/i,
-  /\btranstorno alimentar\b/i,
-  /\banorexia\b/i,
-  /\bbulimia\b/i,
-  /\bgesta/i,
-  /\bgr[aá]vida\b/i,
-  /\bsintoma/i,
-  /\bdor\b/i,
+const unsafeClinicalPatterns = [
+  /\bdiagnos/i,
+  /\bprescri/i,
+  /\btreat(ment)? plan\b/i,
+  /\bwhat should i take\b/i,
+  /\bmedication\b/i,
+  /\bantibiotic\b/i,
+  /\bpainkiller\b/i,
+  /\blab result/i,
+  /\bblood work\b/i,
+  /\bimaging\b/i,
+  /\bmri\b/i,
+  /\bx[-\s]?ray\b/i,
+  /\bexam interpretation\b/i,
+  /\bdiet\b/i,
+  /\bmeal plan\b/i,
+  /\bsupplement\b/i,
+  /\bcreatine\b/i,
+  /\bprotein powder\b/i,
+  /\bcalorie/i,
+  /\bsuicid/i,
+  /\bchest pain\b/i,
+  /\bshortness of breath\b/i,
 ];
 
-const complaintPatterns = [
-  /\breclama/i,
-  /\birritad/i,
-  /\babsurdo\b/i,
-  /\bp[ée]ssim/i,
-  /\bnunca respondem\b/i,
-];
+const complaintPatterns = [/\bcomplain/i, /\bangry\b/i, /\bupset\b/i, /\bterrible\b/i, /\bno one replied\b/i];
 
 export function requiresClinicalHandoff(message: string) {
-  return clinicalPatterns.some((pattern) => pattern.test(message));
+  return unsafeClinicalPatterns.some((pattern) => pattern.test(message));
 }
 
 export function isComplaint(message: string) {
@@ -45,16 +42,14 @@ export function classifyIntent(message: string): Intent {
 
   if (requiresClinicalHandoff(message)) return "clinical_question";
   if (isComplaint(message)) return "complaint";
-  if (/\b(humano|atendente|equipe|pessoa|falar com algu[eé]m)\b/i.test(text)) return "human_handoff";
-  if (/\b(remarcar|reagendar|mudar hor[aá]rio)\b/i.test(text)) return "reschedule_appointment";
-  if (/\b(cancelar|desmarcar)\b/i.test(text)) return "cancel_appointment";
-  if (/\b(pre[cç]o|valor|quanto custa|investimento)\b/i.test(text)) return "ask_price";
-  if (/\b(endere[cç]o|local|onde fica|presencial)\b/i.test(text)) return "ask_location";
-  if (/\b(online|presencial|modalidade)\b/i.test(text)) return "ask_online_or_in_person";
-  if (/\b(como funciona|acompanhamento|consulta)\b/i.test(text)) return "ask_how_it_works";
-  if (/\b(retorno|pol[ií]tica)\b/i.test(text)) return "ask_return_policy";
-  if (/\b(enviar exames|mandar exames|exames)\b/i.test(text)) return "send_exams";
-  if (/\b(agendar|marcar|hor[aá]rio|consulta|quero atendimento)\b/i.test(text)) return "schedule_appointment";
+  if (/\b(human|person|staff|team|representative|call me)\b/i.test(text)) return "human_handoff";
+  if (/\b(reschedule|move my appointment|change appointment)\b/i.test(text)) return "reschedule_appointment";
+  if (/\b(cancel|delete appointment)\b/i.test(text)) return "cancel_appointment";
+  if (/\b(price|pricing|cost|payment|insurance|self pay)\b/i.test(text)) return "ask_pricing";
+  if (/\b(location|address|where are you)\b/i.test(text)) return "ask_location";
+  if (/\b(service|specialty|specialist|provider|doctor)\b/i.test(text)) return "ask_services";
+  if (/\b(hours|open|availability|available)\b/i.test(text)) return "ask_hours";
+  if (/\b(schedule|appointment|book|visit|intake|new patient|clinic)\b/i.test(text)) return "patient_intake";
 
   return "other";
 }
@@ -67,7 +62,8 @@ export function applyDeterministicGuardrails(message: string, output: AssistantO
       ...output,
       reply: CLINICAL_HANDOFF_REPLY,
       intent,
-      leadState: "human_handoff",
+      leadState: "waiting_human",
+      extractedData: { ...output.extractedData, handoffRequired: true },
       handoffRequired: true,
       handoffReason: intent,
       shouldNotifyTeam: true,
@@ -76,8 +72,5 @@ export function applyDeterministicGuardrails(message: string, output: AssistantO
     };
   }
 
-  return {
-    ...output,
-    intent: output.intent === "other" ? intent : output.intent,
-  };
+  return { ...output, intent: output.intent === "other" ? intent : output.intent };
 }

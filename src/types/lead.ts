@@ -1,13 +1,12 @@
 export type Intent =
+  | "patient_intake"
   | "schedule_appointment"
   | "reschedule_appointment"
   | "cancel_appointment"
-  | "ask_price"
+  | "ask_pricing"
   | "ask_location"
-  | "ask_online_or_in_person"
-  | "ask_how_it_works"
-  | "ask_return_policy"
-  | "send_exams"
+  | "ask_services"
+  | "ask_hours"
   | "clinical_question"
   | "human_handoff"
   | "complaint"
@@ -15,55 +14,58 @@ export type Intent =
 
 export type LeadState =
   | "new"
-  | "chatting"
   | "collecting_name"
-  | "collecting_consultation_type"
-  | "collecting_goal"
-  | "collecting_modality"
-  | "collecting_schedule_preference"
   | "collecting_contact"
-  | "ready_for_human_confirmation"
-  | "appointment_suggested"
-  | "appointment_confirmed"
-  | "human_handoff"
-  | "closed";
+  | "collecting_reason"
+  | "collecting_service"
+  | "collecting_urgency"
+  | "collecting_availability"
+  | "collecting_payment"
+  | "qualified"
+  | "waiting_human"
+  | "scheduled"
+  | "lost"
+  | "resolved";
 
-export type ConsultationType = "first_consultation" | "return" | "unknown";
-export type Modality = "online" | "in_person" | "unknown";
+export type UrgencyLevel = "low" | "medium" | "high" | "urgent" | "unknown";
+export type PaymentType = "insurance" | "self_pay" | "unknown";
 
 export type Lead = {
   id: string;
   name?: string;
   email?: string;
   phone?: string;
-  consultationType?: ConsultationType;
-  consultation_type?: ConsultationType;
-  goal?: string;
-  modality?: Modality;
-  schedulePreference?: string;
-  schedule_preference?: string;
+  contact?: string;
+  reasonForVisit?: string;
+  reason_for_visit?: string;
+  preferredService?: string;
+  preferred_service?: string;
+  urgencyLevel?: UrgencyLevel;
+  urgency_level?: UrgencyLevel;
+  availability?: string;
+  paymentType?: PaymentType;
+  payment_type?: PaymentType;
+  handoffRequired?: boolean;
+  handoff_required?: boolean;
   status: LeadState;
   intent?: Intent;
   summary?: string;
-  source: "landing_page" | "instagram_bio" | "manual";
+  source: "landing_page" | "demo" | "manual";
   createdAt?: string;
   created_at?: string;
   updatedAt?: string;
   updated_at?: string;
+
+  // Backward-compatible columns from the initial prototype.
+  consultationType?: string;
+  consultation_type?: string;
+  goal?: string;
+  modality?: string;
+  schedulePreference?: string;
+  schedule_preference?: string;
 };
 
-export type KnowledgeCategory =
-  | "prices"
-  | "location"
-  | "hours"
-  | "online_consultation"
-  | "in_person_consultation"
-  | "first_consultation"
-  | "return_consultation"
-  | "payment"
-  | "cancellation"
-  | "exams"
-  | "general";
+export type KnowledgeCategory = "services" | "pricing" | "schedule" | "policies" | "faq" | "safety";
 
 export type KnowledgeItem = {
   id: string;

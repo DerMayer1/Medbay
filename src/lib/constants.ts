@@ -1,11 +1,18 @@
+export const APP_NAME = "Medbay";
+export const DEMO_CLINIC_NAME = "Northstar Clinic";
+
 export const CLINICAL_HANDOFF_REPLY =
-  "Essa orientação precisa ser feita diretamente pela Juliana em consulta, depois de avaliar seu caso individualmente. Posso te ajudar a deixar um pedido de agendamento ou encaminhar sua mensagem para a equipe.";
+  "I can't provide diagnosis, prescriptions, treatment advice, supplement guidance, diet plans, or exam interpretation. I can collect your intake details and route this to the clinic team for review.";
 
 export const MISSING_INFO_REPLY =
-  "Não tenho essa informação confirmada na base do consultório. Vou encaminhar para a equipe da Juliana verificar e te retornar com segurança.";
+  "I do not have a confirmed answer for that in the clinic knowledge base. I can route this to the operations team for follow-up.";
 
 export const AI_ERROR_REPLY =
-  "Tive uma instabilidade para processar sua mensagem agora. Vou encaminhar sua solicitação para a equipe da Juliana verificar manualmente.";
+  "I had trouble processing that message. I can still capture the intake details and route this to the clinic team.";
 
 export const PRIVACY_TEXT =
-  "Ao continuar, você autoriza o uso das informações enviadas para fins de atendimento, organização do agendamento e contato pela equipe da Juliana Pansardi. A assistente virtual não realiza orientação nutricional individualizada.";
+  "Demo notice: information entered here is used to simulate patient intake, scheduling, handoff, and clinic operations workflows. The assistant does not provide medical advice.";
+
+export function isDemoMode() {
+  return process.env.NEXT_PUBLIC_DEMO_MODE === "true" || process.env.DEMO_MODE === "true";
+}

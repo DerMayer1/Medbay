@@ -7,8 +7,8 @@ export default async function KnowledgePage() {
 
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-semibold">Base de conhecimento</h1>
-      <p className="mt-1 text-sm text-[#66746f]">Informações administrativas que a assistente pode usar.</p>
+      <h1 className="text-2xl font-semibold text-white">Knowledge Base</h1>
+      <p className="mt-1 text-sm text-slate-400">Operational facts used by the intake assistant.</p>
       <div className="mt-6">
         <KnowledgeEditor items={items as Array<Record<string, unknown>>} />
       </div>

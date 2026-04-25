@@ -1,45 +1,50 @@
 import type { AssistantOutput } from "@/types/assistant";
 import type { Lead, LeadState } from "@/types/lead";
 
-const scheduleFlow: LeadState[] = [
+export const leadStatuses: LeadState[] = ["new", "qualified", "waiting_human", "scheduled", "lost", "resolved"];
+
+const intakeFlow: LeadState[] = [
   "collecting_name",
-  "collecting_consultation_type",
-  "collecting_goal",
-  "collecting_modality",
-  "collecting_schedule_preference",
   "collecting_contact",
-  "ready_for_human_confirmation",
+  "collecting_reason",
+  "collecting_service",
+  "collecting_urgency",
+  "collecting_availability",
+  "collecting_payment",
+  "qualified",
 ];
 
 export function hasQualifiedLeadData(lead: Partial<Lead>) {
   return Boolean(
     lead.name &&
-      (lead.consultationType || lead.consultation_type) &&
-      lead.goal &&
-      lead.modality &&
-      (lead.schedulePreference || lead.schedule_preference) &&
-      (lead.phone || lead.email),
+      (lead.contact || lead.phone || lead.email) &&
+      (lead.reasonForVisit || lead.reason_for_visit || lead.goal) &&
+      (lead.preferredService || lead.preferred_service || lead.consultation_type) &&
+      (lead.urgencyLevel || lead.urgency_level) &&
+      lead.availability &&
+      (lead.paymentType || lead.payment_type),
   );
 }
 
 export function getNextLeadState(current: LeadState, lead: Partial<Lead>, intent?: string): LeadState {
-  if (intent === "human_handoff" || intent === "clinical_question" || intent === "complaint") {
-    return "human_handoff";
+  if (intent === "human_handoff" || intent === "clinical_question" || intent === "complaint" || lead.handoffRequired) {
+    return "waiting_human";
   }
 
-  if (hasQualifiedLeadData(lead)) return "ready_for_human_confirmation";
+  if (hasQualifiedLeadData(lead)) return "qualified";
 
-  if (intent !== "schedule_appointment" && current === "new") return "chatting";
+  if (intent !== "patient_intake" && intent !== "schedule_appointment" && current === "new") return "new";
 
   if (!lead.name) return "collecting_name";
-  if (!(lead.consultationType || lead.consultation_type)) return "collecting_consultation_type";
-  if (!lead.goal) return "collecting_goal";
-  if (!lead.modality || lead.modality === "unknown") return "collecting_modality";
-  if (!(lead.schedulePreference || lead.schedule_preference)) return "collecting_schedule_preference";
-  if (!(lead.phone || lead.email)) return "collecting_contact";
+  if (!(lead.contact || lead.phone || lead.email)) return "collecting_contact";
+  if (!(lead.reasonForVisit || lead.reason_for_visit || lead.goal)) return "collecting_reason";
+  if (!(lead.preferredService || lead.preferred_service || lead.consultation_type)) return "collecting_service";
+  if (!(lead.urgencyLevel || lead.urgency_level)) return "collecting_urgency";
+  if (!lead.availability && !(lead.schedulePreference || lead.schedule_preference)) return "collecting_availability";
+  if (!(lead.paymentType || lead.payment_type)) return "collecting_payment";
 
-  const currentIndex = scheduleFlow.indexOf(current);
-  return currentIndex >= 0 ? scheduleFlow[Math.min(currentIndex + 1, scheduleFlow.length - 1)] : "chatting";
+  const currentIndex = intakeFlow.indexOf(current);
+  return currentIndex >= 0 ? intakeFlow[Math.min(currentIndex + 1, intakeFlow.length - 1)] : "new";
 }
 
 export function mergeLeadData(existing: Partial<Lead>, extracted: Partial<Lead>) {

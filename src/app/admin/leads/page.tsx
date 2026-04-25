@@ -8,7 +8,7 @@ export default async function LeadsPage() {
   return (
     <AdminLayout>
       <h1 className="text-2xl font-semibold">Leads</h1>
-      <p className="mt-1 text-sm text-[#66746f]">Solicitações coletadas pela secretária virtual.</p>
+      <p className="mt-1 text-sm text-slate-400">Structured patient intake records and qualification status.</p>
       <div className="mt-6 overflow-x-auto">
         <LeadTable leads={leads as Array<Record<string, unknown>>} />
       </div>

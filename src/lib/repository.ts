@@ -1,19 +1,29 @@
+import { isDemoMode } from "@/lib/constants";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import type { ChatMessage, KnowledgeItem, Lead } from "@/types/lead";
 
 const defaultKnowledge: KnowledgeItem[] = [
   {
-    id: "prices-placeholder",
-    category: "prices",
-    title: "Valores",
-    content: "Valores ainda não cadastrados. Quando perguntarem, informar que a equipe confirmará por contato humano.",
+    id: "services-primary-care",
+    category: "services",
+    title: "Northstar Clinic services",
+    content:
+      "Northstar Clinic is a fictional demo clinic offering primary care, dermatology, orthopedics, cardiology, pediatrics, and behavioral health intake workflows.",
     active: true,
   },
   {
-    id: "general-placeholder",
-    category: "general",
-    title: "Escopo da assistente",
-    content: "A assistente atua apenas em dúvidas administrativas, triagem e pré-agendamento.",
+    id: "safety-admin-only",
+    category: "safety",
+    title: "AI safety scope",
+    content:
+      "The assistant handles administrative intake, scheduling support, knowledge-base answers, and human handoff. It does not provide diagnosis, prescriptions, clinical advice, diet plans, supplement guidance, or exam interpretation.",
+    active: true,
+  },
+  {
+    id: "schedule-demo",
+    category: "schedule",
+    title: "Demo scheduling hours",
+    content: "Demo appointment slots are available Monday through Friday from 9:00 AM to 5:00 PM.",
     active: true,
   },
 ];
@@ -22,12 +32,47 @@ const memory = {
   conversations: new Map<string, Record<string, unknown>>(),
   messages: new Map<string, ChatMessage[]>(),
   leads: new Map<string, Partial<Lead> & { id: string }>(),
+  appointments: new Map<string, Record<string, unknown>>(),
   knowledge: defaultKnowledge,
 };
 
+const demoLeads: Array<Partial<Lead> & { id: string }> = [
+  {
+    id: "11111111-1111-4111-8111-111111111111",
+    name: "Alex Morgan",
+    email: "alex@example.com",
+    contact: "alex@example.com",
+    reason_for_visit: "New patient dermatology consult",
+    preferred_service: "Dermatology",
+    urgency_level: "medium",
+    availability: "Tuesday or Thursday afternoon",
+    payment_type: "insurance",
+    status: "qualified",
+    source: "demo",
+    summary: "Qualified dermatology intake. Patient prefers afternoon availability and will use insurance.",
+    created_at: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
+  },
+  {
+    id: "22222222-2222-4222-8222-222222222222",
+    name: "Jordan Lee",
+    phone: "555-010-0123",
+    contact: "555-010-0123",
+    reason_for_visit: "Asked for clinical interpretation of lab results",
+    preferred_service: "Primary care",
+    urgency_level: "high",
+    availability: "Today if possible",
+    payment_type: "self_pay",
+    handoff_required: true,
+    status: "waiting_human",
+    source: "demo",
+    summary: "Needs human review because the user requested lab interpretation.",
+    created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+  },
+];
+
 export async function getActiveKnowledge() {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return memory.knowledge;
+  if (isDemoMode() || !supabase) return memory.knowledge;
 
   const { data, error } = await supabase
     .from("knowledge_items")
@@ -41,7 +86,7 @@ export async function getActiveKnowledge() {
 
 export async function listKnowledge() {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return memory.knowledge;
+  if (isDemoMode() || !supabase) return memory.knowledge;
 
   const { data, error } = await supabase.from("knowledge_items").select("*").order("updated_at", { ascending: false });
   if (error) throw error;
@@ -50,7 +95,7 @@ export async function listKnowledge() {
 
 export async function createKnowledgeItem(input: Omit<KnowledgeItem, "id">) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) {
+  if (isDemoMode() || !supabase) {
     const item = { ...input, id: crypto.randomUUID() } as KnowledgeItem;
     memory.knowledge.unshift(item);
     return item;
@@ -63,7 +108,7 @@ export async function createKnowledgeItem(input: Omit<KnowledgeItem, "id">) {
 
 export async function updateKnowledgeItem(id: string, input: Partial<KnowledgeItem>) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) {
+  if (isDemoMode() || !supabase) {
     memory.knowledge = memory.knowledge.map((item) => (item.id === id ? { ...item, ...input } : item));
     return memory.knowledge.find((item) => item.id === id);
   }
@@ -75,7 +120,7 @@ export async function updateKnowledgeItem(id: string, input: Partial<KnowledgeIt
 
 export async function ensureConversation(conversationId: string, visitorId: string, source = "landing_page") {
   const supabase = getSupabaseAdmin();
-  if (!supabase) {
+  if (isDemoMode() || !supabase) {
     if (!memory.conversations.has(conversationId)) {
       memory.conversations.set(conversationId, {
         id: conversationId,
@@ -107,7 +152,7 @@ export async function saveMessage(
   metadata: Record<string, unknown> = {},
 ) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) {
+  if (isDemoMode() || !supabase) {
     const message: ChatMessage = {
       id: crypto.randomUUID(),
       conversation_id: conversationId,
@@ -133,7 +178,7 @@ export async function saveMessage(
 
 export async function getRecentMessages(conversationId: string, limit = 12) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return (memory.messages.get(conversationId) || []).slice(-limit);
+  if (isDemoMode() || !supabase) return (memory.messages.get(conversationId) || []).slice(-limit);
 
   const { data, error } = await supabase
     .from("messages")
@@ -147,7 +192,7 @@ export async function getRecentMessages(conversationId: string, limit = 12) {
 
 export async function upsertLeadForConversation(conversationId: string, lead: Partial<Lead>) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) {
+  if (isDemoMode() || !supabase) {
     const conversation = memory.conversations.get(conversationId);
     const existingId = conversation?.lead_id as string | undefined;
     const id = existingId || crypto.randomUUID();
@@ -163,8 +208,15 @@ export async function upsertLeadForConversation(conversationId: string, lead: Pa
     name: lead.name,
     email: lead.email,
     phone: lead.phone,
-    consultation_type: lead.consultationType || lead.consultation_type,
-    goal: lead.goal,
+    contact: lead.contact,
+    reason_for_visit: lead.reasonForVisit || lead.reason_for_visit || lead.goal,
+    preferred_service: lead.preferredService || lead.preferred_service || lead.consultation_type,
+    urgency_level: lead.urgencyLevel || lead.urgency_level,
+    availability: lead.availability || lead.schedulePreference || lead.schedule_preference,
+    payment_type: lead.paymentType || lead.payment_type,
+    handoff_required: lead.handoffRequired || lead.handoff_required || false,
+    consultation_type: lead.consultationType || lead.consultation_type || lead.preferredService || lead.preferred_service,
+    goal: lead.goal || lead.reasonForVisit || lead.reason_for_visit,
     modality: lead.modality,
     schedule_preference: lead.schedulePreference || lead.schedule_preference,
     status: lead.status,
@@ -192,7 +244,7 @@ export async function upsertLeadForConversation(conversationId: string, lead: Pa
 
 export async function getLeadForConversation(conversationId: string) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) {
+  if (isDemoMode() || !supabase) {
     const conversation = memory.conversations.get(conversationId);
     const leadId = conversation?.lead_id as string | undefined;
     return leadId ? memory.leads.get(leadId) : null;
@@ -217,7 +269,7 @@ export async function updateConversationStatus(
   input: { status?: string; last_intent?: string; handoff_required?: boolean; handoff_reason?: string; summary?: string },
 ) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) {
+  if (isDemoMode() || !supabase) {
     const existing = memory.conversations.get(conversationId) || {};
     memory.conversations.set(conversationId, { ...existing, ...input, updated_at: new Date().toISOString() });
     return;
@@ -231,7 +283,10 @@ export async function updateConversationStatus(
 
 export async function listLeads() {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return Array.from(memory.leads.values());
+  if (isDemoMode() || !supabase) {
+    const liveLeads = Array.from(memory.leads.values());
+    return liveLeads.length ? liveLeads : demoLeads;
+  }
 
   const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
   if (error) throw error;
@@ -240,8 +295,8 @@ export async function listLeads() {
 
 export async function getLeadBundle(id: string) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    const lead = memory.leads.get(id);
+  if (isDemoMode() || !supabase) {
+    const lead = memory.leads.get(id) || demoLeads.find((item) => item.id === id);
     const conversation = Array.from(memory.conversations.values()).find((item) => item.lead_id === id);
     const messages = conversation?.id ? memory.messages.get(conversation.id as string) || [] : [];
     return { lead, conversation, messages, appointments: [] };
@@ -257,9 +312,41 @@ export async function getLeadBundle(id: string) {
   return { lead, conversation, messages, appointments };
 }
 
+export async function updateLeadRecord(id: string, input: Partial<Lead> & { notes?: string }) {
+  const supabase = getSupabaseAdmin();
+  if (isDemoMode() || !supabase) {
+    const existing = memory.leads.get(id) || demoLeads.find((item) => item.id === id) || { id, source: "demo" };
+    const updated = { ...existing, ...input, id, updated_at: new Date().toISOString() } as Partial<Lead> & {
+      id: string;
+    };
+    memory.leads.set(id, updated);
+    return updated;
+  }
+
+  const { data, error } = await supabase
+    .from("leads")
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function listConversations() {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return Array.from(memory.conversations.values());
+  if (isDemoMode() || !supabase) {
+    const liveConversations = Array.from(memory.conversations.values());
+    if (liveConversations.length) return liveConversations;
+    return demoLeads.map((lead) => ({
+      id: `conversation-${lead.id}`,
+      lead_id: lead.id,
+      status: lead.status,
+      last_intent: lead.status === "waiting_human" ? "clinical_question" : "patient_intake",
+      summary: lead.summary,
+      updated_at: lead.created_at,
+    }));
+  }
 
   const { data, error } = await supabase
     .from("conversations")
@@ -272,9 +359,41 @@ export async function listConversations() {
 
 export async function listAppointments() {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return [];
+  if (isDemoMode() || !supabase) {
+    const liveAppointments = Array.from(memory.appointments.values());
+    if (liveAppointments.length) return liveAppointments;
+    return [
+      {
+        id: "33333333-3333-4333-8333-333333333333",
+        lead_id: demoLeads[0].id,
+        start_time: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+        end_time: new Date(Date.now() + 1000 * 60 * 60 * 25).toISOString(),
+        modality: "in_person",
+        status: "pending_confirmation",
+        google_event_id: "demo-calendar-event",
+      },
+    ];
+  }
 
   const { data, error } = await supabase.from("appointments").select("*, leads(*)").order("start_time", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function createAppointmentRecord(record: Record<string, unknown>) {
+  const supabase = getSupabaseAdmin();
+  if (isDemoMode() || !supabase) {
+    const appointment = {
+      id: crypto.randomUUID(),
+      ...record,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    memory.appointments.set(String(appointment.id), appointment);
+    return appointment;
+  }
+
+  const { data, error } = await supabase.from("appointments").insert(record).select("*").single();
   if (error) throw error;
   return data;
 }
@@ -287,7 +406,10 @@ export async function writeAuditLog(input: {
   metadata?: Record<string, unknown>;
 }) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return;
+  if (isDemoMode() || !supabase) {
+    console.info("demo_audit_log", input);
+    return;
+  }
 
   await supabase.from("audit_logs").insert({
     actor: input.actor || "system",

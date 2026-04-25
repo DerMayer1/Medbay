@@ -13,11 +13,11 @@ export async function POST(request: NextRequest) {
 
   const payload = handoffPayloadSchema.parse(await request.json());
   await updateConversationStatus(payload.conversationId, {
-    status: "human_handoff",
+    status: "waiting_human",
     handoff_required: true,
     handoff_reason: payload.reason,
   });
-  await notifyTeam("Handoff humano solicitado — Juliana Pansardi", { status: "human_handoff" }, payload.reason);
+  await notifyTeam("Human handoff requested — Medbay", { status: "waiting_human", source: "manual" }, payload.reason);
   await writeAuditLog({
     action: "handoff.created",
     entityType: "conversation",

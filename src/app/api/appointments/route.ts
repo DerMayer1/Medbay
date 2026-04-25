@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCalendarEvent } from "@/lib/calendar";
-import { writeAuditLog } from "@/lib/repository";
+import { createAppointmentRecord, listAppointments, writeAuditLog } from "@/lib/repository";
 import { enforceRateLimit, noStoreJson, rejectCrossOriginMutation, requireAdmin } from "@/lib/security";
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { appointmentPayloadSchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
@@ -11,11 +10,11 @@ export async function GET(request: NextRequest) {
   const authError = await requireAdmin();
   if (authError) return authError;
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return noStoreJson([]);
-  const { data, error } = await supabase.from("appointments").select("*").order("created_at", { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return noStoreJson(data);
+  try {
+    return noStoreJson(await listAppointments());
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not load appointments" }, { status: 400 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -31,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   if (payload.createGoogleEvent && payload.startTime && payload.endTime) {
     const created = await createCalendarEvent({
-      summary: "Consulta nutricional — Juliana Pansardi",
+      summary: "Northstar Clinic appointment",
       description: payload.notes,
       startTime: payload.startTime,
       endTime: payload.endTime,
@@ -50,15 +49,11 @@ export async function POST(request: NextRequest) {
     notes: payload.notes,
   };
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    const id = crypto.randomUUID();
-    await writeAuditLog({ action: "appointment.created", entityType: "appointment", entityId: id, metadata: record });
-    return noStoreJson({ id, ...record });
+  try {
+    const data = await createAppointmentRecord(record);
+    await writeAuditLog({ action: "appointment.created", entityType: "appointment", entityId: String(data.id), metadata: record });
+    return noStoreJson(data);
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not create appointment" }, { status: 400 });
   }
-
-  const { data, error } = await supabase.from("appointments").insert(record).select("*").single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  await writeAuditLog({ action: "appointment.created", entityType: "appointment", entityId: data.id, metadata: record });
-  return noStoreJson(data);
 }

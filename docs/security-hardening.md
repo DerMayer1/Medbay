@@ -1,15 +1,15 @@
 # Security hardening
 
-This app includes application-level controls, but production DDoS and bot mitigation should also be enabled at the Vercel edge.
+Medbay includes application-level controls, but production DDoS and bot mitigation should also be enabled at the Vercel edge.
 
 ## Implemented in code
 
 - Security headers in `next.config.ts`.
 - Same-origin checks on mutating API routes.
 - In-memory rate limiting for public and sensitive routes.
-- Supabase Auth requirement for admin API routes.
+- Supabase Auth and admin role requirement for admin API routes.
 - Supabase RLS migrations.
-- Audit log writes for chat, handoff, knowledge, lead and appointment mutations.
+- Audit log writes for chat, handoff, knowledge, lead, and appointment mutations.
 - Public route responses use `Cache-Control: no-store` where data may be sensitive.
 
 ## Vercel Firewall recommendations

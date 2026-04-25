@@ -2,6 +2,8 @@
 
 import { FormEvent, useState } from "react";
 
+const categories = ["services", "pricing", "schedule", "policies", "faq", "safety"];
+
 export function KnowledgeEditor({ items }: { items: Array<Record<string, unknown>> }) {
   const [localItems, setLocalItems] = useState(items);
   const [isSaving, setIsSaving] = useState(false);
@@ -38,61 +40,49 @@ export function KnowledgeEditor({ items }: { items: Array<Record<string, unknown
 
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-      <form onSubmit={handleCreate} className="rounded-lg border border-[#d9ded6] bg-white p-5">
-        <h2 className="text-lg font-semibold">Novo item</h2>
-        <label className="mt-4 block text-sm font-medium">
-          Categoria
-          <select name="category" className="mt-2 w-full rounded-md border border-[#c7d0c8] px-3 py-2">
-            <option value="general">Geral</option>
-            <option value="prices">Valores</option>
-            <option value="location">Endereço</option>
-            <option value="hours">Horários</option>
-            <option value="online_consultation">Consulta online</option>
-            <option value="in_person_consultation">Consulta presencial</option>
-            <option value="return_consultation">Retorno</option>
-            <option value="cancellation">Cancelamento</option>
-            <option value="exams">Exames</option>
+      <form onSubmit={handleCreate} className="rounded-xl border border-white/10 bg-slate-900 p-5">
+        <h2 className="text-lg font-semibold text-white">New knowledge item</h2>
+        <label className="mt-4 block text-sm font-medium text-slate-300">
+          Category
+          <select name="category" className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2">
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
           </select>
         </label>
-        <label className="mt-4 block text-sm font-medium">
-          Título
-          <input name="title" required className="mt-2 w-full rounded-md border border-[#c7d0c8] px-3 py-2" />
+        <label className="mt-4 block text-sm font-medium text-slate-300">
+          Title
+          <input name="title" required className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2" />
         </label>
-        <label className="mt-4 block text-sm font-medium">
-          Conteúdo
+        <label className="mt-4 block text-sm font-medium text-slate-300">
+          Content
           <textarea
             name="content"
             required
             rows={6}
-            className="mt-2 w-full rounded-md border border-[#c7d0c8] px-3 py-2"
+            className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2"
           />
         </label>
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="mt-5 rounded-md bg-[#176b4d] px-4 py-2 text-sm font-semibold text-white"
-        >
-          Salvar item
+        <button type="submit" disabled={isSaving} className="mt-5 rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950">
+          Save item
         </button>
       </form>
 
       <div className="space-y-3">
         {localItems.map((item) => (
-          <article key={String(item.id)} className="rounded-lg border border-[#d9ded6] bg-white p-5">
+          <article key={String(item.id)} className="rounded-xl border border-white/10 bg-slate-900 p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#176b4d]">{String(item.category)}</p>
-                <h3 className="mt-1 text-lg font-semibold">{String(item.title)}</h3>
+                <p className="text-xs font-semibold uppercase tracking-wide text-cyan-200">{String(item.category)}</p>
+                <h3 className="mt-1 text-lg font-semibold text-white">{String(item.title)}</h3>
               </div>
-              <button
-                type="button"
-                onClick={() => toggleItem(item)}
-                className="rounded-md border border-[#c7d0c8] px-3 py-2 text-xs font-semibold"
-              >
-                {item.active ? "Desativar" : "Ativar"}
+              <button type="button" onClick={() => toggleItem(item)} className="rounded-md border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300">
+                {item.active ? "Disable" : "Enable"}
               </button>
             </div>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#52605b]">{String(item.content)}</p>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-400">{String(item.content)}</p>
           </article>
         ))}
       </div>

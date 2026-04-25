@@ -1,19 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { renderLeadEmail } from "@/lib/email";
 
-describe("email template", () => {
-  it("renders qualified lead fields", () => {
+describe("notification fallback", () => {
+  it("renders intake fields for mocked notifications", () => {
     const email = renderLeadEmail({
-      name: "Ana Silva",
-      phone: "11999999999",
-      consultationType: "first_consultation",
-      goal: "Consulta inicial",
-      modality: "online",
-      schedulePreference: "terça de manhã",
-      status: "ready_for_human_confirmation",
+      name: "Alex Morgan",
+      contact: "alex@example.com",
+      reasonForVisit: "Skin concern",
+      preferredService: "Dermatology",
+      urgencyLevel: "medium",
+      availability: "Tuesday afternoon",
+      paymentType: "insurance",
+      status: "qualified",
     });
 
-    expect(email).toContain("Ana Silva");
-    expect(email).toContain("terça de manhã");
+    expect(email).toContain("Alex Morgan");
+    expect(email).toContain("Dermatology");
+    expect(email).toContain("Tuesday afternoon");
   });
 });

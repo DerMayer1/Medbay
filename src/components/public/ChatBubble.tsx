@@ -6,7 +6,7 @@ export function ChatBubble({ role, content }: { role: MessageRole; content: stri
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
         className={`max-w-[82%] rounded-lg px-4 py-3 text-sm leading-6 ${
-          isUser ? "bg-[#173d32] text-[#fff8ef]" : "border border-[#ead8c3] bg-[#fffdf9] text-[#2f3834]"
+          isUser ? "bg-cyan-700 text-white" : "border border-slate-200 bg-white text-slate-800"
         }`}
       >
         {content}

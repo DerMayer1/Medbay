@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     const payload = chatPayloadSchema.parse(await request.json());
     const conversationId = payload.conversationId || crypto.randomUUID();
-    const visitorId = request.cookies.get("juliana_visitor_id")?.value || crypto.randomUUID();
+    const visitorId = request.cookies.get("medbay_visitor_id")?.value || crypto.randomUUID();
 
     await ensureConversation(conversationId, visitorId, payload.metadata?.source || "landing_page");
     await saveMessage(conversationId, "user", payload.message, payload.metadata || {});
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     if (guarded.shouldNotifyTeam) {
       await notifyTeam(
-        guarded.handoffRequired ? "Atendimento humano solicitado — Juliana Pansardi" : "Novo lead qualificado — Juliana Pansardi",
+        guarded.handoffRequired ? "Human handoff requested — Medbay" : "Qualified clinic intake — Medbay",
         lead,
         guarded.summary,
       );
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       intent: guarded.intent,
       handoffRequired: guarded.handoffRequired,
     });
-    response.cookies.set("juliana_visitor_id", visitorId, {
+    response.cookies.set("medbay_visitor_id", visitorId, {
       httpOnly: true,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 365,
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       {
         reply: AI_ERROR_REPLY,
         conversationId: crypto.randomUUID(),
-        leadStatus: "human_handoff",
+        leadStatus: "waiting_human",
         intent: "human_handoff",
         handoffRequired: true,
       },

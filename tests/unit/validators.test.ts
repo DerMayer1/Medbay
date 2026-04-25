@@ -3,15 +3,15 @@ import { chatPayloadSchema, handoffPayloadSchema, knowledgePayloadSchema } from 
 
 describe("validators", () => {
   it("accepts chat payload", () => {
-    expect(chatPayloadSchema.parse({ message: "Quero agendar" }).message).toBe("Quero agendar");
+    expect(chatPayloadSchema.parse({ message: "Start intake" }).message).toBe("Start intake");
   });
 
   it("rejects empty handoff reason", () => {
     expect(() => handoffPayloadSchema.parse({ conversationId: crypto.randomUUID(), reason: "" })).toThrow();
   });
 
-  it("accepts known knowledge categories", () => {
-    expect(knowledgePayloadSchema.parse({ category: "prices", title: "Valores", content: "Confirmar" }).active).toBe(
+  it("accepts clinic knowledge categories", () => {
+    expect(knowledgePayloadSchema.parse({ category: "services", title: "Primary care", content: "Available" }).active).toBe(
       true,
     );
   });

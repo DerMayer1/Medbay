@@ -15,8 +15,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Secretária Virtual Juliana Pansardi",
-  description: "Atendimento administrativo e pré-agendamento para o consultório de nutrição Juliana Pansardi.",
+  title: "Medbay | AI Clinic Operations Platform",
+  description: "AI intake, scheduling, handoff, and admin operations platform for modern clinics.",
 };
 
 export default function RootLayout({
