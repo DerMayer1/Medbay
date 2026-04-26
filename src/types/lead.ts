@@ -57,7 +57,7 @@ export type Lead = {
   status: LeadState;
   intent?: Intent;
   summary?: string;
-  source: "landing_page" | "demo" | "manual";
+  source: "landing_page" | "manual";
   createdAt?: string;
   created_at?: string;
   updatedAt?: string;

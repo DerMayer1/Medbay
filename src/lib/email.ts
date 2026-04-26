@@ -1,11 +1,12 @@
 import { Resend } from "resend";
-import { isDemoMode } from "@/lib/constants";
 import type { Lead } from "@/types/lead";
 
 let resend: Resend | null = null;
 
 function getResend() {
-  if (!process.env.RESEND_API_KEY || isDemoMode()) return null;
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is not configured.");
+  }
   if (!resend) resend = new Resend(process.env.RESEND_API_KEY);
   return resend;
 }
@@ -33,11 +34,8 @@ export async function notifyTeam(subject: string, lead: Partial<Lead>, summary?:
   const to = process.env.TEAM_EMAIL;
   const from = process.env.FROM_EMAIL;
 
-  if (!client || !to || !from) {
-    const event = { mocked: true, subject, text: renderLeadEmail(lead, summary) };
-    console.info("demo_email_notification", event);
-    return event;
-  }
+  if (!to) throw new Error("TEAM_EMAIL is not configured.");
+  if (!from) throw new Error("FROM_EMAIL is not configured.");
 
   return client.emails.send({ from, to, subject, text: renderLeadEmail(lead, summary) });
 }

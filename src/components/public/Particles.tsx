@@ -51,7 +51,7 @@ export function Particles() {
 
       draw() {
         if (!ctx) return;
-        ctx.fillStyle = `rgba(240, 161, 93, ${this.opacity})`; // Orange tone matches #f0a15d
+        ctx.fillStyle = `rgba(34, 211, 238, ${this.opacity})`; // Cyan tone
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();

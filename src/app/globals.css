@@ -1,14 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), "SF Mono", Consolas, monospace;
+
+  --color-sage-50: #F4F7F4;
+  --color-sage-100: #E3EBE4;
+  --color-sage-200: #C7D7C9;
+  --color-sage-300: #A3C2A4;
+  --color-sage-400: #7DA87F;
+  --color-sage-500: #5E8C61;
+  --color-sage-600: #466E49;
+  --color-sage-700: #38573A;
+  --color-sage-800: #2E4630;
+  --color-sage-900: #263A28;
+  --color-sage-950: #142016;
+
+  --color-charcoal-900: #0D1015;
+  --color-charcoal-950: #0A0C10;
+
+  --color-medbay-800: #192226;
+  --color-medbay-900: #10171b;
+  --color-medbay-950: #080d10;
 }
 
 :root {
-  /* Premium deep dark background */
-  --background: #050505; 
-  --foreground: #fff8ef;
+  --background: #070b0e;
+  --foreground: #ffffff;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -24,21 +46,41 @@ select {
 }
 
 ::selection {
-  background: #d97934;
-  color: #fff8ef;
+  background: #27d1bf;
+  color: #04110f;
 }
 
-/* Custom scrollbar for premium feel */
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #050505;
+  background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #f0a15d40;
-  border-radius: 4px;
+  background: rgba(32, 184, 170, 0.28);
+  border-radius: 999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #f0a15d80;
+  background: rgba(32, 184, 170, 0.48);
+}
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .animation-delay-150 {
+    animation-delay: 150ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
 }

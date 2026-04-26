@@ -2,6 +2,8 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { LeadTable } from "@/components/admin/LeadTable";
 import { listLeads } from "@/lib/repository";
 
+export const dynamic = "force-dynamic";
+
 export default async function LeadsPage() {
   const leads = await listLeads();
 

@@ -10,6 +10,8 @@ import { legacyStatusToIntakeStatus, leadToIntakeCase, leadToPatient } from "@/f
 import { getLeadBundle } from "@/lib/repository";
 import type { ChatMessage } from "@/types/lead";
 
+export const dynamic = "force-dynamic";
+
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const bundle = await getLeadBundle(id);
@@ -102,7 +104,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               {auditEvents.map((event) => (
                 <div key={`${event.action}-${event.createdAt || event.entityId}`} className="border-l border-cyan-300/30 pl-3">
                   <p className="text-sm font-semibold text-white">{event.action}</p>
-                  <p className="text-xs text-slate-500">{event.createdAt || "Demo event"}</p>
+                  <p className="text-xs text-slate-500">{event.createdAt || "Timestamp unavailable"}</p>
                 </div>
               ))}
               {auditEvents.length === 0 ? <p className="text-sm text-slate-500">No audit events recorded yet.</p> : null}

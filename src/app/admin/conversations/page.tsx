@@ -3,6 +3,8 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { legacyStatusToIntakeStatus } from "@/features/intake/infrastructure/legacy-mappers";
 import { listConversations } from "@/lib/repository";
 
+export const dynamic = "force-dynamic";
+
 export default async function ConversationsPage() {
   const conversations = await listConversations();
 

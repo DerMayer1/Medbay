@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { renderLeadEmail } from "@/lib/email";
 
-describe("notification fallback", () => {
-  it("renders intake fields for mocked notifications", () => {
+describe("notification email rendering", () => {
+  it("renders intake fields for production notifications", () => {
     const email = renderLeadEmail({
       name: "Alex Morgan",
       contact: "alex@example.com",

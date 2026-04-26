@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isDemoMode } from "@/lib/constants";
 import { getServerSupabase } from "@/lib/supabaseServer";
 
 type RateLimitConfig = {
@@ -101,15 +100,10 @@ export function rejectCrossOriginMutation(request: NextRequest) {
 }
 
 export async function requireAdmin() {
-  if (isDemoMode()) return null;
-
   const hasSupabaseEnv = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
   if (!hasSupabaseEnv) {
-    if (process.env.NODE_ENV === "production") {
-      return NextResponse.json({ error: "auth_not_configured" }, { status: 503 });
-    }
-    return null;
+    return NextResponse.json({ error: "auth_not_configured" }, { status: 503 });
   }
 
   const supabase = await getServerSupabase();

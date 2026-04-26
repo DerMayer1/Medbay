@@ -62,7 +62,7 @@ alter table leads
   add constraint leads_modality_check
   check (modality is null or modality in ('online', 'in_person', 'unknown')),
   add constraint leads_source_check
-  check (source in ('landing_page', 'demo', 'manual')),
+  check (source in ('landing_page', 'manual')),
   add constraint leads_urgency_level_check
   check (urgency_level is null or urgency_level in ('low', 'medium', 'high', 'urgent', 'unknown')),
   add constraint leads_payment_type_check

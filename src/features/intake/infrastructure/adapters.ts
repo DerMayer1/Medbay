@@ -1,4 +1,3 @@
-import { isDemoMode } from "@/lib/constants";
 import { createCalendarEvent } from "@/lib/calendar";
 import { notifyTeam } from "@/lib/email";
 import { extractLeadByState } from "@/lib/extraction";
@@ -34,7 +33,6 @@ import {
   intakeFieldsToLead,
   intakeStatusToLegacyStatus,
   leadToIntakeCase,
-  leadToIntakeFields,
   leadToPatient,
 } from "@/features/intake/infrastructure/legacy-mappers";
 
@@ -177,9 +175,10 @@ class RepositoryBackedAdapters implements IntakeUseCaseDependencies {
   };
 
   calendarProvider = {
-    requestAppointment: async (input: { intakeCaseId: string; preferredTime?: string; notes?: string }) => {
+    requestAppointment: async (input: { intakeCaseId: string; preferredTime?: string; notes?: string }): Promise<Appointment> => {
       const startTime = input.preferredTime || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const endTime = new Date(new Date(startTime).getTime() + 45 * 60 * 1000).toISOString();
+      const status: Appointment["status"] = "requested";
       const event = await createCalendarEvent({
         summary: "Northstar Clinic appointment request",
         description: input.notes,
@@ -190,7 +189,7 @@ class RepositoryBackedAdapters implements IntakeUseCaseDependencies {
         lead_id: input.intakeCaseId,
         start_time: startTime,
         end_time: endTime,
-        status: "requested",
+        status,
         google_event_id: event.googleEventId,
         notes: input.notes,
       });
@@ -199,22 +198,11 @@ class RepositoryBackedAdapters implements IntakeUseCaseDependencies {
         intakeCaseId: input.intakeCaseId,
         startTime,
         endTime,
-        status: "requested",
+        status,
         externalCalendarEventId: event.googleEventId,
         notes: input.notes,
       };
     },
-  };
-}
-
-class MemoryAdapters extends RepositoryBackedAdapters {
-  private auditEvents: AuditEvent[] = [];
-
-  auditLogger = {
-    record: async (event: AuditEvent) => {
-      this.auditEvents.push({ ...event, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
-    },
-    listByEntity: async (entityId: string) => this.auditEvents.filter((event) => event.entityId === entityId),
   };
 }
 
@@ -263,5 +251,5 @@ export function buildKnowledgeContextFromItems(items: KnowledgeBaseItem[]) {
 }
 
 export function createIntakeUseCaseDependencies(): IntakeUseCaseDependencies {
-  return isDemoMode() ? new MemoryAdapters() : new RepositoryBackedAdapters();
+  return new RepositoryBackedAdapters();
 }

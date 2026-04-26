@@ -5,7 +5,7 @@ export const chatPayloadSchema = z.object({
   message: z.string().trim().min(1).max(2000),
   metadata: z
     .object({
-      source: z.string().optional(),
+      source: z.enum(["landing_page", "manual"]).optional(),
       page: z.string().optional(),
     })
     .passthrough()

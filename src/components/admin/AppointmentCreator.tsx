@@ -17,7 +17,7 @@ export function AppointmentCreator() {
   const [startTime, setStartTime] = useState(toLocalInputValue(defaultStart));
   const [endTime, setEndTime] = useState(toLocalInputValue(defaultEnd));
   const [modality, setModality] = useState("in_person");
-  const [notes, setNotes] = useState("Demo appointment created from the operations console.");
+  const [notes, setNotes] = useState("Appointment created from the operations console.");
   const [createGoogleEvent, setCreateGoogleEvent] = useState(false);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
@@ -54,7 +54,7 @@ export function AppointmentCreator() {
         </div>
         <div>
           <h2 className="font-semibold text-white">Create appointment</h2>
-          <p className="text-sm text-slate-400">Uses Google Calendar when configured, otherwise stores a demo record.</p>
+          <p className="text-sm text-slate-400">Uses Google Calendar when calendar sync is selected and configured.</p>
         </div>
       </div>
 

@@ -4,6 +4,8 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { legacyStatusToIntakeStatus } from "@/features/intake/infrastructure/legacy-mappers";
 import { listAppointments, listConversations, listLeads } from "@/lib/repository";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboard() {
   const [leads, conversations, appointments] = await Promise.all([listLeads(), listConversations(), listAppointments()]);
   const intakeCases = leads.map((lead) => ({ ...lead, caseStatus: legacyStatusToIntakeStatus(lead.status) }));
@@ -16,7 +18,7 @@ export default async function AdminDashboard() {
     { label: "Needs human review", value: waiting, icon: UserCheck },
     { label: "Scheduled appointments", value: scheduled, icon: Clock },
     { label: "Ready for scheduling", value: readyForScheduling, icon: Activity },
-    { label: "Demo avg response", value: "1.8s", icon: Activity },
+    { label: "Avg response target", value: "1.8s", icon: Activity },
   ];
 
   return (
@@ -24,7 +26,7 @@ export default async function AdminDashboard() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-white">Operations overview</h1>
-          <p className="mt-1 text-sm text-slate-400">Live demo workspace for Northstar Clinic intake operations.</p>
+          <p className="mt-1 text-sm text-slate-400">Operations workspace for Northstar Clinic intake workflows.</p>
         </div>
         <Link href="/admin/leads" className="inline-flex items-center gap-2 rounded-md bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950">
           Review intake cases

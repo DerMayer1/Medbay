@@ -1,7 +1,7 @@
 "use client";
 
-import { SendHorizontal } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { ChatBubble } from "@/components/public/ChatBubble";
 import { PRIVACY_TEXT } from "@/lib/constants";
 
@@ -85,7 +85,7 @@ export function ChatWidget() {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "The intake service is temporarily unavailable. Please try again or open the admin demo.",
+          content: "The intake service is temporarily unavailable. Please try again or contact the clinic operations team.",
         },
       ]);
     } finally {
@@ -109,58 +109,74 @@ export function ChatWidget() {
   }
 
   return (
-    <section className="w-full overflow-hidden rounded-xl border border-white/10 bg-[#f8fafc] text-[#101827]">
-      <div className="border-b border-slate-200 bg-white p-5">
+    <section className="flex h-[620px] min-h-0 w-full flex-col overflow-hidden rounded-[26px] border border-white/10 bg-[#071012] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+      <div className="relative border-b border-white/10 bg-[#0c171a] p-5">
+        <motion.div
+          className="absolute inset-x-5 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(54,230,213,0.88),transparent)]"
+          animate={{ opacity: [0.35, 1, 0.35] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+        />
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Patient intake assistant</p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-950">Northstar Clinic</h2>
+            <p className="font-mono text-[10px] font-semibold uppercase text-[#36e6d5]">
+              Intake assistant
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold">Northstar Clinic</h2>
           </div>
-          <div className="rounded-md border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-800">
-            Demo mode
+          <div className="rounded-[999px] border border-[#36e6d5]/25 bg-[#36e6d5]/10 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase text-[#a8fff6]">
+            Online
           </div>
         </div>
-        <p className="mt-3 text-sm leading-6 text-slate-600">{PRIVACY_TEXT}</p>
+        <p className="mt-3 max-w-[620px] text-xs leading-6 text-white/52">{PRIVACY_TEXT}</p>
       </div>
 
-      <div className="h-[430px] overflow-y-auto bg-slate-50 p-5">
-        <div className="space-y-4">
+      <div className="min-h-0 flex-1 overflow-y-auto p-5 scroll-smooth">
+        <div className="space-y-5">
           {messages.map((message) => (
             <ChatBubble key={message.id} role={message.role} content={message.content} />
           ))}
-          {isLoading ? <p className="text-sm text-slate-500">Assistant is processing intake...</p> : null}
+          {isLoading ? (
+            <div className="max-w-[78%] rounded-[18px] border border-white/10 bg-white/[0.045] p-4">
+              <div className="h-2 w-32 animate-pulse rounded-full bg-[#36e6d5]/35" />
+              <div className="mt-3 h-2 w-48 animate-pulse rounded-full bg-white/10 animation-delay-150" />
+            </div>
+          ) : null}
           <div ref={scrollRef} />
         </div>
       </div>
 
-      <div className="border-t border-slate-200 bg-white p-4">
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+      <div className="border-t border-white/10 bg-[#0c171a] p-4">
+        <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-2">
           {quickReplies.map((reply) => (
             <button
               key={reply}
               type="button"
               onClick={() => sendMessage(reply)}
-              className="shrink-0 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="shrink-0 rounded-[999px] border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-white/62 transition hover:border-[#36e6d5]/35 hover:bg-[#36e6d5]/10 hover:text-[#a8fff6] active:scale-[0.98]"
             >
               {reply}
             </button>
           ))}
         </div>
-        <form onSubmit={handleSubmit} className="flex gap-2">
+        <form onSubmit={handleSubmit} className="flex gap-3">
+          <label className="sr-only" htmlFor="patient-message">
+            Patient message
+          </label>
           <input
+            id="patient-message"
             ref={inputRef}
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder="Type an intake message"
-            className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+            placeholder="Type your response..."
+            className="min-w-0 flex-1 rounded-[16px] border border-white/10 bg-[#05090b] px-5 py-3.5 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[#36e6d5]/55 focus:bg-[#071012] focus:ring-4 focus:ring-[#36e6d5]/10"
           />
           <button
             type="submit"
             aria-label="Send message"
-            className="grid h-12 w-12 place-items-center rounded-md bg-cyan-600 text-white hover:bg-cyan-700 disabled:opacity-60"
-            disabled={isLoading}
+            className="min-w-24 rounded-[16px] bg-[#36e6d5] px-5 py-3.5 text-sm font-semibold text-[#031311] transition hover:bg-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={isLoading || !input.trim()}
           >
-            <SendHorizontal className="h-5 w-5" aria-hidden="true" />
+            Send
           </button>
         </form>
       </div>

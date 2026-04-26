@@ -96,6 +96,6 @@ create index if not exists appointments_start_time_idx on appointments(start_tim
 
 insert into knowledge_items (category, title, content, active)
 values
-  ('services', 'Northstar Clinic services', 'Northstar Clinic is a fictional demo clinic offering primary care, dermatology, orthopedics, cardiology, pediatrics, and behavioral health intake workflows.', true),
+  ('services', 'Northstar Clinic services', 'Northstar Clinic offers primary care, dermatology, orthopedics, cardiology, pediatrics, and behavioral health intake workflows.', true),
   ('safety', 'AI safety scope', 'The assistant handles administrative intake, scheduling support, knowledge-base answers, and human handoff. It does not provide diagnosis, prescriptions, clinical advice, diet plans, supplement guidance, or exam interpretation.', true)
 on conflict do nothing;

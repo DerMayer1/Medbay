@@ -62,7 +62,7 @@ function createTestDependencies(): IntakeUseCaseDependencies & { audits: AuditEv
       }),
     },
     notificationProvider: {
-      notifyIntakeEvent: async () => ({ mocked: true }),
+      notifyIntakeEvent: async () => ({ queued: true }),
     },
   };
 }

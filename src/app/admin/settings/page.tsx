@@ -1,13 +1,15 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 
+export const dynamic = "force-dynamic";
+
 export default function SettingsPage() {
   const settings = [
-    ["Demo clinic", "Northstar Clinic"],
-    ["Demo mode", process.env.NEXT_PUBLIC_DEMO_MODE === "true" ? "Enabled" : "Disabled"],
-    ["Team email", process.env.TEAM_EMAIL || "Mock notification provider"],
+    ["Clinic", "Northstar Clinic"],
+    ["Runtime mode", "Production"],
+    ["Team email", process.env.TEAM_EMAIL || "Not configured"],
     ["Timezone", process.env.CLINIC_TIMEZONE || "America/New_York"],
     ["Default duration", `${process.env.DEFAULT_APPOINTMENT_DURATION_MINUTES || 45} minutes`],
-    ["Calendar provider", process.env.GOOGLE_CALENDAR_ID ? "Google Calendar" : "Mock calendar"],
+    ["Calendar provider", process.env.GOOGLE_CALENDAR_ID ? "Google Calendar" : "Not configured"],
   ];
 
   const rules = [

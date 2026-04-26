@@ -58,7 +58,7 @@ The use case depends on interfaces:
 - `NotificationProvider`
 - `CalendarProvider`
 
-Demo mode is selected through adapter construction. Production integrations use Supabase, OpenAI, Resend, and Google Calendar behind the same use-case boundary.
+Production integrations use Supabase, OpenAI, Resend, and Google Calendar behind the same use-case boundary. Missing provider configuration fails explicitly instead of switching to local behavior.
 
 ## Persistence
 

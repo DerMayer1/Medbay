@@ -84,7 +84,7 @@ export type IntakeCase = {
   handoffRequired: boolean;
   handoffReason?: string;
   summary?: string;
-  source: "landing_page" | "demo" | "manual";
+  source: "landing_page" | "manual";
   createdAt?: string;
   updatedAt?: string;
 };

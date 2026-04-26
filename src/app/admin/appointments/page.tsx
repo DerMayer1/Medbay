@@ -3,6 +3,8 @@ import { AppointmentCreator } from "@/components/admin/AppointmentCreator";
 import { AppointmentTable } from "@/components/admin/AppointmentTable";
 import { listAppointments } from "@/lib/repository";
 
+export const dynamic = "force-dynamic";
+
 export default async function AppointmentsPage() {
   const appointments = await listAppointments();
 

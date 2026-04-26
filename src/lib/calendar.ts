@@ -1,5 +1,4 @@
 import { google } from "googleapis";
-import { isDemoMode } from "@/lib/constants";
 
 export type Slot = {
   start: string;
@@ -7,12 +6,13 @@ export type Slot = {
 };
 
 function getCalendarClient() {
-  if (isDemoMode() || process.env.NODE_ENV === "test") return null;
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
-  if (!clientId || !clientSecret || !refreshToken) return null;
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error("Google Calendar OAuth credentials are not configured.");
+  }
 
   const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
   oauth2Client.setCredentials({ refresh_token: refreshToken });
@@ -27,8 +27,8 @@ export async function getAvailableSlots(startDate?: string, endDate?: string): P
   const start = startDate ? new Date(startDate) : new Date();
   const end = endDate ? new Date(endDate) : new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  if (!calendar || !process.env.GOOGLE_CALENDAR_ID) {
-    return buildBusinessHourSlots(start, end, duration);
+  if (!process.env.GOOGLE_CALENDAR_ID) {
+    throw new Error("GOOGLE_CALENDAR_ID is not configured.");
   }
 
   const busy = await calendar.freebusy.query({
@@ -50,12 +50,6 @@ export async function getAvailableSlots(startDate?: string, endDate?: string): P
       return slotStart < busyEnd && slotEnd > busyStart;
     });
   });
-}
-
-export async function getMockAvailableSlots(startDate?: string, endDate?: string) {
-  const start = startDate ? new Date(startDate) : new Date();
-  const end = endDate ? new Date(endDate) : new Date(start.getTime() + 5 * 24 * 60 * 60 * 1000);
-  return buildBusinessHourSlots(start, end, 45).slice(0, 8);
 }
 
 function buildBusinessHourSlots(start: Date, end: Date, durationMinutes: number) {
@@ -83,8 +77,8 @@ export async function createCalendarEvent(input: {
   endTime: string;
 }) {
   const calendar = getCalendarClient();
-  if (!calendar || !process.env.GOOGLE_CALENDAR_ID) {
-    return { googleEventId: `mock-${Date.now()}` };
+  if (!process.env.GOOGLE_CALENDAR_ID) {
+    throw new Error("GOOGLE_CALENDAR_ID is not configured.");
   }
 
   const event = await calendar.events.insert({

@@ -2,7 +2,17 @@
 
 Medbay is an AI-assisted intake infrastructure case study for clinics. It turns unstructured patient conversations into structured, auditable intake cases with deterministic safety policies, handoff workflows, appointment requests, knowledge-base context, and admin review.
 
-The demo clinic is fictional: **Northstar Clinic**.
+The reference clinic is fictional: **Northstar Clinic**.
+
+## Latest Updates
+
+- Redesigned the public Medbay surface as a premium dark healthtech interface with a teal clinical accent, dense operational framing, and custom animated workspace visuals.
+- Reworked the intake chat UI so messages, quick replies, and the input area stay contained across desktop and smaller viewports.
+- Restyled the admin login and operations console to match the new clinical operations design language.
+- Added dynamic rendering for protected admin pages so production builds do not prerender Supabase-backed staff views.
+- Hardened the intake pipeline with deterministic administrative fallbacks when AI or notification providers fail.
+- Updated Supabase/Auth setup expectations, including admin profile access and required operational tables.
+- Addressed development hydration noise caused by external attributes injected on the root HTML element.
 
 ## Problem
 
@@ -84,19 +94,6 @@ The policy engine in `src/features/intake/domain/policy-engine.ts` evaluates:
 
 Policy decisions return `allow`, `block`, `escalate`, or `ask_clarifying_question`, plus severity, reason, handoff state, and safe response guidance. Assistant output is also validated before it is persisted.
 
-## Demo Mode
-
-Set `NEXT_PUBLIC_DEMO_MODE=true` to run without external credentials.
-
-Demo mode uses adapter-level fallbacks for:
-
-- fake intake cases
-- in-memory conversations
-- simulated AI response
-- mocked email notification
-- mocked calendar behavior
-- in-memory audit records
-
 ## Production Tradeoffs
 
 Production-ready pieces:
@@ -110,9 +107,8 @@ Production-ready pieces:
 - audit event model
 - rate limiting and same-origin mutation checks
 
-Intentionally mocked or simplified:
+Current simplifications:
 
-- demo storage is in-memory
 - rate limits are process-local
 - notifications are synchronous
 - appointment requests do not require staff approval UI beyond status controls
@@ -127,7 +123,7 @@ For a production clinic deployment, see `docs/production-readiness.md`.
 - Explicit interfaces for repositories, AI, notifications, calendar, and audit.
 - Workflow and policy modules covered with Vitest tests.
 - Backwards-compatible migration path from `leads` to Intake Cases.
-- Demo mode works without exposing API keys or requiring recruiter credentials.
+- Provider configuration is explicit: missing Supabase, OpenAI, Resend, or Google Calendar credentials fail fast.
 
 ## Tech Stack
 
@@ -156,23 +152,22 @@ Open `http://localhost:3000`.
 
 ```env
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_DEMO_MODE=true
 
-OPENAI_API_KEY=
+OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4.1-mini
 
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-RESEND_API_KEY=
-TEAM_EMAIL=
-FROM_EMAIL=
+RESEND_API_KEY=re_...
+TEAM_EMAIL=ops@yourclinic.com
+FROM_EMAIL=Medbay <noreply@yourdomain.com>
 
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_REFRESH_TOKEN=
-GOOGLE_CALENDAR_ID=
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REFRESH_TOKEN=your_google_refresh_token
+GOOGLE_CALENDAR_ID=primary
 CLINIC_TIMEZONE=America/New_York
 DEFAULT_APPOINTMENT_DURATION_MINUTES=45
 ```

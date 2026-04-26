@@ -2,6 +2,8 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { KnowledgeEditor } from "@/components/admin/KnowledgeEditor";
 import { listKnowledge } from "@/lib/repository";
 
+export const dynamic = "force-dynamic";
+
 export default async function KnowledgePage() {
   const items = await listKnowledge();
 

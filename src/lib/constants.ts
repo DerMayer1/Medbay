@@ -1,5 +1,5 @@
 export const APP_NAME = "Medbay";
-export const DEMO_CLINIC_NAME = "Northstar Clinic";
+export const CLINIC_NAME = "Northstar Clinic";
 
 export const CLINICAL_HANDOFF_REPLY =
   "I can't provide diagnosis, prescriptions, treatment advice, supplement guidance, diet plans, or exam interpretation. I can collect your intake details and route this to the clinic team for review.";
@@ -11,8 +11,4 @@ export const AI_ERROR_REPLY =
   "I had trouble processing that message. I can still capture the intake details and route this to the clinic team.";
 
 export const PRIVACY_TEXT =
-  "Demo notice: information entered here is used to simulate patient intake, scheduling, handoff, and clinic operations workflows. The assistant does not provide medical advice.";
-
-export function isDemoMode() {
-  return process.env.NEXT_PUBLIC_DEMO_MODE === "true" || process.env.DEMO_MODE === "true";
-}
+  "Information entered here is used for patient intake, scheduling, handoff, and clinic operations workflows. The assistant does not provide medical advice.";

@@ -1,18 +1,17 @@
 # Production Readiness
 
-Medbay is designed as a portfolio-grade product engineering case study with a clear path to production hardening.
+Medbay now runs in a production-provider posture. It does not include demo mode, in-memory persistence, simulated email, simulated calendar behavior, or AI response fallbacks for missing credentials.
 
-## Current Demo Architecture
+## Required Providers
 
-Demo mode is enabled with `NEXT_PUBLIC_DEMO_MODE=true`.
+The application expects these services to be configured:
 
-In demo mode:
+- Supabase/PostgreSQL for persistence, auth, audit logs, conversations, messages, intake cases, appointments, and knowledge base records.
+- OpenAI API for assistant response generation.
+- Resend for operational notification delivery.
+- Google Calendar API for availability and appointment event creation.
 
-- AI responses can be simulated when no OpenAI key exists.
-- email notifications are logged instead of sent.
-- calendar behavior is mocked when Google credentials are absent.
-- Supabase-backed tables can be replaced by in-memory demo records.
-- recruiter exploration does not require credentials.
+Missing provider credentials fail explicitly instead of silently switching to local behavior.
 
 ## Production-Ready Pieces
 
@@ -21,18 +20,17 @@ In demo mode:
 - Zod request validation.
 - Deterministic intake workflow engine.
 - Deterministic policy engine for AI safety boundaries.
-- Supabase-compatible persistence model.
+- Supabase-backed persistence model.
 - Audit event model.
 - Admin review console.
 - Backend-only access to OpenAI, Resend, Supabase service role, and Google Calendar credentials.
 
-## Intentionally Mocked
+## Current Simplifications
 
-- demo storage
-- email delivery without Resend keys
-- calendar creation without Google credentials
-- response time and demo dashboard metrics
-- minimal audit trail visualization
+- Rate limits are process-local and should be moved to a distributed store.
+- Notifications are sent synchronously in the request path.
+- Appointment requests have status controls, but no full staff approval queue yet.
+- Audit trail rendering is intentionally compact.
 
 ## Redis / Upstash / Vercel KV Needs
 
@@ -47,7 +45,7 @@ Recommended keys:
 
 ## Queues and Background Jobs
 
-Synchronous notifications are acceptable for the demo, but production should use queues for:
+Synchronous notifications are acceptable for early production, but production scale should use queues for:
 
 - email notification retries
 - calendar sync retries
@@ -86,8 +84,6 @@ Needed hardening:
 
 ## Observability Gaps
 
-The demo logs important events but does not include full production observability.
-
 Production should add:
 
 - structured logs
@@ -102,7 +98,6 @@ Production should add:
 For Vercel:
 
 - set all environment variables per environment
-- keep demo mode enabled for public portfolio deployments
-- disable demo mode for real clinics
 - configure Supabase migrations before production traffic
+- configure admin users in Supabase Auth and `profiles`
 - use a durable external rate limiter before public launch

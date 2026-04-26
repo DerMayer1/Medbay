@@ -58,7 +58,7 @@ function createOpenedCase(input: {
     status: "opened",
     fields: {},
     handoffRequired: false,
-    source: input.source === "manual" || input.source === "demo" ? input.source : "landing_page",
+    source: input.source === "manual" ? input.source : "landing_page",
     createdAt: new Date().toISOString(),
   };
 }
@@ -74,6 +74,21 @@ function safeReplyFromPolicy(policy: PolicyEvaluation) {
 
 function hasMeaningfulExtraction(fields: IntakeFields) {
   return Object.values(fields).some((value) => value !== undefined && value !== "" && value !== "unknown");
+}
+
+function fallbackAdministrativeReply(policy: PolicyEvaluation, fields: IntakeFields) {
+  if (policy.decision === "ask_clarifying_question" || policy.decision === "block" || policy.decision === "escalate") {
+    return policy.safeResponseHint;
+  }
+
+  if (!fields.patientName) return "I can start the intake. What is the patient's full name?";
+  if (!fields.contact) return "What is the best phone number or email for clinic follow-up?";
+  if (!fields.reasonForVisit) return "What is the main reason for the visit?";
+  if (!fields.requestedService) return "Which clinic service or specialty should this be routed to?";
+  if (!fields.urgencyLevel) return "How urgent is this request: low, medium, high, or urgent?";
+  if (!fields.availability) return "What days or times usually work for an appointment?";
+  if (!fields.paymentType) return "Will this be insurance or self-pay?";
+  return "I have the core intake details and can route this to the clinic team for review.";
 }
 
 export async function handlePatientMessage(
@@ -139,21 +154,26 @@ export async function handlePatientMessage(
   let summary = intakeCase.summary || input.message;
 
   if (policy.decision === "allow" || policy.decision === "ask_clarifying_question") {
-    const aiOutput = await dependencies.aiProvider.generateResponse(
-      buildAiInput({
-        message: input.message,
-        messages: recentMessages,
-        knowledge: buildKnowledgeContextFromItems(knowledgeItems),
-        fields: mergedFields,
-      }),
-    );
-    mergedFields = mergeAiExtractedFields(mergedFields, aiOutput.extractedData);
-    reply = policy.decision === "ask_clarifying_question" ? policy.safeResponseHint : aiOutput.reply;
-    summary = aiOutput.summary || summary;
+    try {
+      const aiOutput = await dependencies.aiProvider.generateResponse(
+        buildAiInput({
+          message: input.message,
+          messages: recentMessages,
+          knowledge: buildKnowledgeContextFromItems(knowledgeItems),
+          fields: mergedFields,
+        }),
+      );
+      mergedFields = mergeAiExtractedFields(mergedFields, aiOutput.extractedData);
+      reply = policy.decision === "ask_clarifying_question" ? policy.safeResponseHint : aiOutput.reply;
+      summary = aiOutput.summary || summary;
 
-    const outputPolicy = validateAssistantOutputSafety(reply);
-    if (outputPolicy.decision === "block" || outputPolicy.decision === "escalate") {
-      reply = outputPolicy.safeResponseHint;
+      const outputPolicy = validateAssistantOutputSafety(reply);
+      if (outputPolicy.decision === "block" || outputPolicy.decision === "escalate") {
+        reply = outputPolicy.safeResponseHint;
+      }
+    } catch (error) {
+      console.error("ai_provider_error", error);
+      reply = fallbackAdministrativeReply(policy, mergedFields);
     }
   }
 
@@ -232,17 +252,21 @@ export async function handlePatientMessage(
   }
 
   if (policy.handoffRequired || status === "ready_for_scheduling") {
-    await dependencies.notificationProvider.notifyIntakeEvent({
-      subject: policy.handoffRequired ? "Human review requested - Medbay" : "Intake case ready for scheduling - Medbay",
-      intakeCase: updatedCase,
-      summary,
-    });
-    await dependencies.auditLogger.record({
-      action: "notification_sent",
-      entityType: "intake_case",
-      entityId: updatedCase.id,
-      metadata: { handoffRequired: policy.handoffRequired },
-    });
+    try {
+      await dependencies.notificationProvider.notifyIntakeEvent({
+        subject: policy.handoffRequired ? "Human review requested - Medbay" : "Intake case ready for scheduling - Medbay",
+        intakeCase: updatedCase,
+        summary,
+      });
+      await dependencies.auditLogger.record({
+        action: "notification_sent",
+        entityType: "intake_case",
+        entityId: updatedCase.id,
+        metadata: { handoffRequired: policy.handoffRequired },
+      });
+    } catch (error) {
+      console.error("notification_provider_error", error);
+    }
   }
 
   if (status === "appointment_requested") {
