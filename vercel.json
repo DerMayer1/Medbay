@@ -1,0 +1,24 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "routes": [
+    {
+      "src": "/(wp-admin|wp-login|wp-content|wp-includes|xmlrpc\\.php)(.*)",
+      "mitigate": {
+        "action": "deny"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i)(curl|wget|python-requests|nikto|sqlmap|masscan|zgrab)"
+        }
+      ],
+      "mitigate": {
+        "action": "challenge"
+      }
+    }
+  ]
+}
