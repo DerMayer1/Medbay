@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import { ChatBubble } from "@/components/public/ChatBubble";
 import { PRIVACY_TEXT } from "@/lib/constants";
 
@@ -30,6 +29,7 @@ export function ChatWidget() {
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [persistenceAvailable, setPersistenceAvailable] = useState(true);
   const conversationIdRef = useRef<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,11 +61,20 @@ export function ChatWidget() {
         body: JSON.stringify({
           conversationId,
           message: text,
+          history: messages
+            .filter((item) => item.role === "user")
+            .slice(-11)
+            .map((item) => item.content),
           metadata: { source: "landing_page", page: "/" },
         }),
       });
 
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Chat request failed");
+      }
+
+      setPersistenceAvailable(data.persistenceAvailable !== false);
       if (data.conversationId) {
         window.localStorage.setItem("medbay_conversation_id", data.conversationId);
         conversationIdRef.current = data.conversationId;
@@ -110,24 +119,18 @@ export function ChatWidget() {
 
   return (
     <section className="flex h-[620px] min-h-0 w-full flex-col overflow-hidden rounded-[26px] border border-white/10 bg-[#071012] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-      <div className="relative border-b border-white/10 bg-[#0c171a] p-5">
-        <motion.div
-          className="absolute inset-x-5 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(54,230,213,0.88),transparent)]"
-          animate={{ opacity: [0.35, 1, 0.35] }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-        />
+      <div className="border-b border-white/10 bg-[#0c171a] p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="font-mono text-[10px] font-semibold uppercase text-[#36e6d5]">
-              Intake assistant
-            </p>
-            <h2 className="mt-1 text-2xl font-semibold">Northstar Clinic</h2>
-          </div>
-          <div className="rounded-[999px] border border-[#36e6d5]/25 bg-[#36e6d5]/10 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase text-[#a8fff6]">
-            Online
+            <h2 className="text-2xl font-semibold">Northstar Clinic intake</h2>
           </div>
         </div>
         <p className="mt-3 max-w-[620px] text-xs leading-6 text-white/52">{PRIVACY_TEXT}</p>
+        {!persistenceAvailable ? (
+          <p className="mt-3 border-l-2 border-amber-300/70 pl-3 text-xs leading-5 text-amber-100/80">
+            Clinic systems are temporarily unavailable. You can continue this session, but your intake is not being saved.
+          </p>
+        ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-5 scroll-smooth">

@@ -50,7 +50,12 @@ export async function ensureConversation(conversationId: string, visitorId: stri
     .eq("id", conversationId)
     .maybeSingle();
   if (existingError) throw existingError;
-  if (existing) return existing;
+  if (existing) {
+    if (existing.visitor_id !== visitorId) {
+      throw new Error("Conversation does not belong to this visitor.");
+    }
+    return existing;
+  }
 
   const { data, error } = await supabase
     .from("conversations")

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyDeterministicGuardrails, classifyIntent, requiresClinicalHandoff } from "@/lib/guardrails";
-import { fallbackAssistantResponse } from "@/lib/openai";
+import type { AssistantOutput } from "@/types/assistant";
 
 describe("guardrails", () => {
   it("classifies unsafe medical requests as clinical handoff", () => {
@@ -9,12 +9,16 @@ describe("guardrails", () => {
   });
 
   it("overrides unsafe output with a safe handoff message", () => {
-    const output = fallbackAssistantResponse({
-      message: "Can you diagnose this rash?",
-      messages: [],
-      knowledge: "",
-      currentLeadState: "new",
-    });
+    const output: AssistantOutput = {
+      reply: "Unreviewed response",
+      intent: "other",
+      leadState: "new",
+      extractedData: {},
+      handoffRequired: false,
+      shouldNotifyTeam: false,
+      shouldCheckCalendar: false,
+      shouldCreateAppointment: false,
+    };
 
     const guarded = applyDeterministicGuardrails("Can you diagnose this rash?", output);
     expect(guarded.handoffRequired).toBe(true);

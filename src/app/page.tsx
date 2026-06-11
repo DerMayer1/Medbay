@@ -26,18 +26,6 @@ const navItems = [
   ["Safety", "#safety"],
 ];
 
-const metrics = [
-  ["47.2", "manual touches removed"],
-  ["08", "workflow states"],
-  ["1.8s", "response target"],
-];
-
-const operatingRows = [
-  { name: "Elena Araujo", reason: "lab interpretation boundary", status: "human review", risk: "urgent", score: 82 },
-  { name: "Marco Rivas", reason: "availability and payment captured", status: "ready to schedule", risk: "clear", score: 96 },
-  { name: "Priya Nair", reason: "provider preference missing", status: "collecting", risk: "open", score: 54 },
-];
-
 const modules = [
   {
     code: "01",
@@ -87,19 +75,10 @@ export default function Home() {
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#05090b]/82 backdrop-blur-xl">
         <div className="mx-auto flex h-[4.25rem] max-w-[1500px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="group flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-[14px] border border-[#36e6d5]/25 bg-[#36e6d5]/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-              <motion.span
-                className="h-3.5 w-3.5 rounded-[5px] bg-[#36e6d5]"
-                animate={{ scale: [1, 1.24, 1], opacity: [1, 0.72, 1] }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-              />
+            <span className="grid h-9 w-9 place-items-center rounded-[10px] border border-[#36e6d5]/25 bg-[#36e6d5]/10">
+              <span className="h-3.5 w-3.5 rounded-[4px] bg-[#36e6d5]" />
             </span>
-            <span>
-              <span className="block text-lg font-semibold">Medbay</span>
-              <span className="block font-mono text-[10px] uppercase text-white/45">
-                Clinical operations
-              </span>
-            </span>
+            <span className="text-lg font-semibold">Medbay</span>
           </Link>
 
           <nav className="hidden items-center gap-7 text-sm font-medium text-white/58 lg:flex">
@@ -112,10 +91,10 @@ export default function Home() {
 
           <div className="flex items-center gap-2">
             <Link
-              href="/admin"
+              href="/admin/login"
               className="hidden rounded-[12px] border border-white/12 px-4 py-2.5 text-sm font-semibold text-white/72 transition hover:border-[#36e6d5]/45 hover:bg-[#36e6d5]/8 hover:text-white sm:inline-flex"
             >
-              Staff console
+              Staff sign in
             </Link>
             <a
               href="#intake"
@@ -130,16 +109,6 @@ export default function Home() {
       <section className="relative">
         <div className="mx-auto grid min-h-[calc(100dvh-4.25rem)] max-w-[1500px] gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-center lg:px-8 xl:gap-12">
           <motion.div variants={container} initial="hidden" animate="show" className="max-w-[660px]">
-            <motion.div
-              variants={item}
-              className="mb-6 inline-flex items-center gap-3 rounded-[999px] border border-[#36e6d5]/24 bg-[#36e6d5]/10 px-3 py-1.5"
-            >
-              <span className="h-2 w-2 rounded-full bg-[#36e6d5] shadow-[0_0_18px_rgba(54,230,213,0.72)]" />
-              <span className="font-mono text-[11px] uppercase text-[#a8fff6]">
-                Telehealth intake engine
-              </span>
-            </motion.div>
-
             <motion.h1
               variants={item}
               className="max-w-[650px] text-balance text-5xl font-semibold leading-[1.02] text-white sm:text-6xl xl:text-7xl"
@@ -160,23 +129,11 @@ export default function Home() {
                 Run patient intake
               </a>
               <Link
-                href="/admin"
+                href="/admin/login"
                 className="inline-flex items-center justify-center rounded-[14px] border border-white/15 bg-white/[0.045] px-5 py-3.5 text-sm font-semibold text-white transition hover:border-[#36e6d5]/45 hover:bg-[#36e6d5]/10 active:scale-[0.98]"
               >
-                Open operations console
+                Staff sign in
               </Link>
-            </motion.div>
-
-            <motion.div
-              variants={item}
-              className="mt-9 grid max-w-[600px] grid-cols-3 overflow-hidden rounded-[24px] border border-white/10 bg-[#0a1114]/90"
-            >
-              {metrics.map(([value, label]) => (
-                <div key={value} className="border-r border-white/10 p-4 last:border-r-0 sm:p-5">
-                  <p className="font-mono text-2xl text-white">{value}</p>
-                  <p className="mt-2 text-xs leading-5 text-white/50">{label}</p>
-                </div>
-              ))}
             </motion.div>
           </motion.div>
 
@@ -189,16 +146,8 @@ export default function Home() {
             <div className="relative rounded-[34px] border border-white/12 bg-white/[0.055] p-2 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.86)] backdrop-blur-2xl">
               <div className="pointer-events-none absolute -inset-px rounded-[34px] bg-[conic-gradient(from_120deg_at_48%_42%,transparent_0deg,rgba(54,230,213,0.36)_68deg,transparent_130deg,transparent_360deg)] opacity-50" />
               <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#081013]/96">
-                <WorkspaceHeader />
-
-                <div className="grid min-h-[620px] lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
-                  <aside className="hidden border-r border-white/10 p-4 lg:block">
-                    <QueuePanel />
-                  </aside>
-
-                  <div id="intake" className="min-w-0 p-4 lg:p-5">
-                    <ChatWidget />
-                  </div>
+                <div id="intake" className="min-w-0 p-3 sm:p-4">
+                  <ChatWidget />
                 </div>
               </div>
             </div>
@@ -339,10 +288,10 @@ export default function Home() {
                 Start intake
               </a>
               <Link
-                href="/admin"
+                href="/admin/login"
                 className="inline-flex justify-center rounded-[14px] border border-white/15 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-white/[0.08] active:scale-[0.98]"
               >
-                Staff console
+                Staff sign in
               </Link>
             </div>
           </div>
@@ -364,78 +313,6 @@ function AmbientField() {
       />
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:92px_92px] opacity-[0.12]" />
       <div className="absolute inset-x-0 top-0 h-[42rem] bg-[radial-gradient(circle_at_72%_18%,rgba(54,230,213,0.20),transparent_34%),linear-gradient(180deg,rgba(5,9,11,0.18),#05090b_92%)]" />
-    </div>
-  );
-}
-
-function WorkspaceHeader() {
-  return (
-    <div className="relative flex items-center justify-between border-b border-white/10 px-4 py-3">
-      <div className="flex items-center gap-2">
-        <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
-        <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
-        <motion.span
-          className="h-2.5 w-2.5 rounded-full bg-[#36e6d5]"
-          animate={{ opacity: [1, 0.4, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
-      </div>
-      <span className="font-mono text-[11px] uppercase text-white/42">live intake workspace</span>
-    </div>
-  );
-}
-
-function QueuePanel() {
-  return (
-    <div className="h-full">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <p className="font-mono text-[11px] uppercase text-[#a8fff6]">Operations</p>
-          <h2 className="mt-2 text-2xl font-semibold leading-tight">Triage queue</h2>
-        </div>
-        <motion.div
-          className="rounded-[12px] border border-[#36e6d5]/20 bg-[#36e6d5]/10 px-3 py-2 font-mono text-xs text-[#a8fff6]"
-          animate={{ y: [0, -3, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        >
-          12 open
-        </motion.div>
-      </div>
-
-      <div className="mt-6 space-y-3">
-        {operatingRows.map((row, index) => (
-          <motion.div
-            key={row.name}
-            layout
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 110, damping: 20, delay: 0.24 + index * 0.08 }}
-            className="rounded-[20px] border border-white/10 bg-white/[0.045] p-4 transition hover:border-[#36e6d5]/30 hover:bg-white/[0.065]"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-white">{row.name}</p>
-                <p className="mt-1 text-xs leading-5 text-white/42">{row.reason}</p>
-              </div>
-              <StatusPill value={row.risk} />
-            </div>
-            <div className="mt-4 border-t border-white/10 pt-3">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] uppercase text-white/42">{row.status}</span>
-                <span className="font-mono text-[10px] text-[#a8fff6]">{row.score}%</span>
-              </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                <motion.span
-                  className="block h-full rounded-full bg-[#36e6d5]"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${row.score}%` }}
-                  transition={{ duration: 1.2, ease, delay: 0.4 + index * 0.12 }}
-                />
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -516,20 +393,5 @@ function SectionIntro({
       <h2 className="mt-5 text-4xl font-semibold leading-[1.04] text-white sm:text-5xl">{title}</h2>
       <p className="mt-5 max-w-[640px] text-base leading-8 text-white/58">{description}</p>
     </div>
-  );
-}
-
-function StatusPill({ value }: { value: string }) {
-  const className =
-    value === "urgent"
-      ? "border-[#f2b466]/30 bg-[#f2b466]/10 text-[#ffd19a]"
-      : value === "clear"
-        ? "border-[#36e6d5]/30 bg-[#36e6d5]/10 text-[#a8fff6]"
-        : "border-white/15 bg-white/[0.06] text-white/50";
-
-  return (
-    <span className={`rounded-[999px] border px-2.5 py-1 font-mono text-[10px] uppercase ${className}`}>
-      {value}
-    </span>
   );
 }

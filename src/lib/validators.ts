@@ -3,6 +3,7 @@ import { z } from "zod";
 export const chatPayloadSchema = z.object({
   conversationId: z.string().uuid().optional(),
   message: z.string().trim().min(1).max(2000),
+  history: z.array(z.string().trim().min(1).max(2000)).max(12).optional(),
   metadata: z
     .object({
       source: z.enum(["landing_page", "manual"]).optional(),
