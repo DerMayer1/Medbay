@@ -1,8 +1,8 @@
 export function AppointmentTable({ appointments }: { appointments: Array<Record<string, unknown>> }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-900">
+    <div className="overflow-hidden rounded-xl border border-[#e5e5e5] bg-[#ffffff]">
       <table className="w-full min-w-[680px] text-left text-sm">
-        <thead className="bg-white/5 text-slate-300">
+        <thead className="bg-[#f5f5f5] text-[#525252]">
           <tr>
               <th className="px-4 py-3">Start</th>
               <th className="px-4 py-3">End</th>
@@ -11,7 +11,7 @@ export function AppointmentTable({ appointments }: { appointments: Array<Record<
             <th className="px-4 py-3">Google</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/10 text-slate-400">
+        <tbody className="divide-y divide-[#ededed] text-[#737373]">
           {appointments.map((appointment) => (
             <tr key={String(appointment.id)}>
               <td className="px-4 py-3">{String(appointment.start_time || "Pending")}</td>
@@ -23,7 +23,7 @@ export function AppointmentTable({ appointments }: { appointments: Array<Record<
           ))}
           {appointments.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-4 py-8 text-center text-[#66746f]">
+              <td colSpan={5} className="px-4 py-8 text-center text-[#737373]">
                 No appointments recorded.
               </td>
             </tr>
