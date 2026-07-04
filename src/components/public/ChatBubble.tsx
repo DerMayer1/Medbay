@@ -15,8 +15,8 @@ export function ChatBubble({ role, content }: { role: MessageRole; content: stri
       <div
         className={`max-w-[85%] rounded-[20px] px-5 py-3.5 text-sm leading-7 ${
           isUser
-            ? "rounded-br-[6px] bg-[#36e6d5] text-[#031311]"
-            : "rounded-bl-[6px] border border-white/10 bg-white/[0.055] text-white/78"
+            ? "rounded-br-[6px] bg-[#3b82f6] text-[#ffffff]"
+            : "rounded-bl-[6px] border border-[#1e3a5f] bg-[#111827] text-[#eef5ff]"
         }`}
       >
         {content}
