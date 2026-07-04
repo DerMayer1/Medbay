@@ -123,7 +123,7 @@ For a production clinic deployment, see `docs/production-readiness.md`.
 - Explicit interfaces for repositories, AI, notifications, calendar, and audit.
 - Workflow and policy modules covered with Vitest tests.
 - Backwards-compatible migration path from `leads` to Intake Cases.
-- Provider configuration is explicit: missing Supabase, OpenAI, Resend, or Google Calendar credentials fail fast.
+- Provider configuration is explicit: missing Supabase, OpenAI, Resend, or Google Calendar credentials fail fast inside provider modules. The public chat route may return a marked degraded response when infrastructure is unavailable so patients are not shown a raw failure.
 
 ## Tech Stack
 
