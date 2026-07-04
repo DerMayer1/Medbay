@@ -40,11 +40,11 @@ export function KnowledgeEditor({ items }: { items: Array<Record<string, unknown
 
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-      <form onSubmit={handleCreate} className="rounded-xl border border-white/10 bg-slate-900 p-5">
-        <h2 className="text-lg font-semibold text-white">New knowledge item</h2>
-        <label className="mt-4 block text-sm font-medium text-slate-300">
+      <form onSubmit={handleCreate} className="rounded-xl border border-[#e5e5e5] bg-[#ffffff] p-5">
+        <h2 className="text-lg font-semibold text-[#262626]">New knowledge item</h2>
+        <label className="mt-4 block text-sm font-medium text-[#262626]">
           Category
-          <select name="category" className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2">
+          <select name="category" className="mt-2 w-full rounded-md border border-[#e5e5e5] bg-[#fafafa] px-3 py-2">
             {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
@@ -52,37 +52,37 @@ export function KnowledgeEditor({ items }: { items: Array<Record<string, unknown
             ))}
           </select>
         </label>
-        <label className="mt-4 block text-sm font-medium text-slate-300">
+        <label className="mt-4 block text-sm font-medium text-[#262626]">
           Title
-          <input name="title" required className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2" />
+          <input name="title" required className="mt-2 w-full rounded-md border border-[#e5e5e5] bg-[#fafafa] px-3 py-2" />
         </label>
-        <label className="mt-4 block text-sm font-medium text-slate-300">
+        <label className="mt-4 block text-sm font-medium text-[#262626]">
           Content
           <textarea
             name="content"
             required
             rows={6}
-            className="mt-2 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2"
+            className="mt-2 w-full rounded-md border border-[#e5e5e5] bg-[#fafafa] px-3 py-2"
           />
         </label>
-        <button type="submit" disabled={isSaving} className="mt-5 rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950">
+        <button type="submit" disabled={isSaving} className="mt-5 rounded-md bg-[#3b82f6] px-4 py-2 text-sm font-semibold text-[#ffffff]">
           Save item
         </button>
       </form>
 
       <div className="space-y-3">
         {localItems.map((item) => (
-          <article key={String(item.id)} className="rounded-xl border border-white/10 bg-slate-900 p-5">
+          <article key={String(item.id)} className="rounded-xl border border-[#e5e5e5] bg-[#ffffff] p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-cyan-200">{String(item.category)}</p>
-                <h3 className="mt-1 text-lg font-semibold text-white">{String(item.title)}</h3>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#3b82f6]">{String(item.category)}</p>
+                <h3 className="mt-1 text-lg font-semibold text-[#262626]">{String(item.title)}</h3>
               </div>
-              <button type="button" onClick={() => toggleItem(item)} className="rounded-md border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300">
+              <button type="button" onClick={() => toggleItem(item)} className="rounded-md border border-[#e5e5e5] px-3 py-2 text-xs font-semibold text-[#525252]">
                 {item.active ? "Disable" : "Enable"}
               </button>
             </div>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-400">{String(item.content)}</p>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#737373]">{String(item.content)}</p>
           </article>
         ))}
       </div>
