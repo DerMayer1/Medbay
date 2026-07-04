@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ChatBubble } from "@/components/public/ChatBubble";
 import { PRIVACY_TEXT } from "@/lib/constants";
+import { motion } from "framer-motion";
 
 type UiMessage = {
   id: string;
@@ -10,13 +11,30 @@ type UiMessage = {
   content: string;
 };
 
-const quickReplies = [
-  "Start a new patient intake.",
-  "What services does Northstar Clinic offer?",
-  "I need to schedule an appointment.",
-  "I want a human to review this.",
-  "Can you interpret my lab results?",
+const quickActions = [
+  {
+    label: "Start intake",
+    description: "Collect patient details",
+    prompt: "Start a new patient intake.",
+  },
+  {
+    label: "Clinic question",
+    description: "Services and policies",
+    prompt: "What services does Northstar Clinic offer?",
+  },
+  {
+    label: "Schedule visit",
+    description: "Prepare appointment handoff",
+    prompt: "I need to schedule an appointment.",
+  },
+  {
+    label: "Human review",
+    description: "Route to staff",
+    prompt: "I want a human to review this.",
+  },
 ];
+
+const caseSignals = ["Intent", "Safety", "Scheduling", "Staff review"];
 
 export function ChatWidget() {
   const [input, setInput] = useState("");
@@ -29,8 +47,9 @@ export function ChatWidget() {
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [persistenceAvailable, setPersistenceAvailable] = useState(true);
+  const [usingDemoFallback, setUsingDemoFallback] = useState(false);
   const conversationIdRef = useRef<string>("");
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +61,9 @@ export function ChatWidget() {
   }, []);
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading]);
 
   async function sendMessage(message: string) {
@@ -74,7 +95,7 @@ export function ChatWidget() {
         throw new Error(data.error || "Chat request failed");
       }
 
-      setPersistenceAvailable(data.persistenceAvailable !== false);
+      setUsingDemoFallback(data.persistenceAvailable === false);
       if (data.conversationId) {
         window.localStorage.setItem("medbay_conversation_id", data.conversationId);
         conversationIdRef.current = data.conversationId;
@@ -117,47 +138,120 @@ export function ChatWidget() {
     return id;
   }
 
+  const hasStarted = messages.some((message) => message.role === "user");
+  const currentCaseStatus = isLoading ? "Processing" : hasStarted ? "Collecting details" : "Not started";
+  const nextStep = hasStarted ? "Continue the intake" : "Choose a request";
+  const safetyStatus = usingDemoFallback ? "Demo fallback" : "Active";
+
   return (
-    <section className="flex h-[620px] min-h-0 w-full flex-col overflow-hidden rounded-[26px] border border-white/10 bg-[#071012] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-      <div className="border-b border-white/10 bg-[#0c171a] p-5">
+    <section className="flex h-[670px] min-h-0 w-full flex-col overflow-hidden rounded-[26px] border border-[#1e3a5f] bg-[#07101f] text-[#eef5ff] shadow-[0_34px_90px_rgba(59,130,246,0.22),inset_0_1px_0_rgba(147,197,253,0.12)]">
+      <div className="border-b border-[#1e3a5f] bg-[#081426] p-4 pb-3">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold">Northstar Clinic intake</h2>
+            <p className="medbay-label">Patient front door</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">Northstar Clinic intake</h2>
+          </div>
+          <div className="hidden rounded-2xl border border-[#1e3a5f] bg-[#09172b] px-4 py-3 text-right sm:block">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#3b82f6]">Case state</p>
+            <p className="mt-1 text-sm font-semibold text-[#eef5ff]">{currentCaseStatus}</p>
           </div>
         </div>
-        <p className="mt-3 max-w-[620px] text-xs leading-6 text-white/52">{PRIVACY_TEXT}</p>
-        {!persistenceAvailable ? (
-          <p className="mt-3 border-l-2 border-amber-300/70 pl-3 text-xs leading-5 text-amber-100/80">
-            Clinic systems are temporarily unavailable. You can continue this session, but your intake is not being saved.
+        <p className="mt-2 max-w-[620px] text-xs leading-5 text-[#94a3b8]">{PRIVACY_TEXT}</p>
+        {usingDemoFallback ? (
+          <p className="mt-3 border-l-2 border-[#3b82f6]/70 pl-3 text-xs leading-5 text-[#2563eb]">
+            Demo fallback is active. The intake flow continues locally while the portfolio admin uses seeded review data.
           </p>
         ) : null}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-5 scroll-smooth">
-        <div className="space-y-5">
-          {messages.map((message) => (
-            <ChatBubble key={message.id} role={message.role} content={message.content} />
-          ))}
-          {isLoading ? (
-            <div className="max-w-[78%] rounded-[18px] border border-white/10 bg-white/[0.045] p-4">
-              <div className="h-2 w-32 animate-pulse rounded-full bg-[#36e6d5]/35" />
-              <div className="mt-3 h-2 w-48 animate-pulse rounded-full bg-white/10 animation-delay-150" />
+      <div className="grid min-h-0 flex-1 gap-3 bg-[#07101f] p-3 md:grid-cols-[minmax(0,1fr)_226px]">
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-[#1e3a5f] bg-[#08111f]">
+          <div className="flex items-center justify-between border-b border-[#1e3a5f] bg-[#0a1628] px-4 py-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#3b82f6]">Conversation</p>
+              <p className="mt-1 text-xs text-[#94a3b8]">{nextStep}</p>
             </div>
-          ) : null}
-          <div ref={scrollRef} />
+            <span className="rounded-full bg-[#1e3a5f] px-3 py-1 text-[10px] font-bold text-[#7db7ff]">
+              {hasStarted ? "active" : "ready"}
+            </span>
+          </div>
+          <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto bg-[#08111f] p-4 scroll-smooth">
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <ChatBubble key={message.id} role={message.role} content={message.content} />
+              ))}
+              {isLoading ? (
+                <div className="max-w-[78%] rounded-[18px] border border-[#1e3a5f] bg-[#09172b] p-4">
+                  <div className="h-2 w-32 animate-pulse rounded-full bg-[#60a5fa]/50" />
+                  <div className="mt-3 h-2 w-48 animate-pulse rounded-full bg-[#e5e5e5] animation-delay-150" />
+                </div>
+              ) : null}
+              <div ref={scrollRef} />
+            </div>
+          </div>
         </div>
+
+        <aside className="hidden min-h-0 flex-col overflow-hidden rounded-[22px] border border-[#1e3a5f] bg-[#08111f] p-3 md:flex">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#3b82f6]">Intake console</p>
+
+          <div className="mt-3 space-y-2">
+            {[
+              ["Current case", currentCaseStatus],
+              ["Safety", safetyStatus],
+              ["Saves to admin", "Portfolio demo"],
+            ].map(([label, value], index) => (
+              <motion.div
+                key={label}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.08, duration: 0.35 }}
+                className="rounded-2xl border border-[#1e3a5f] bg-[#09172b] p-2"
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#94a3b8]">{label}</p>
+                <p className="mt-0.5 text-xs font-semibold text-[#eef5ff]">{value}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {caseSignals.map((signal, index) => {
+              const active = hasStarted || index === 1;
+              return (
+                <motion.div
+                  key={signal}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + index * 0.05, duration: 0.3 }}
+                  className={`rounded-2xl border p-2 ${
+                    active ? "border-[#3b82f6] bg-[#102449]" : "border-[#1e3a5f] bg-[#09172b]"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-[#3b82f6]" : "bg-[#d4d4d4]"}`} />
+                    <span className="text-[10px] font-semibold text-[#eef5ff]">{signal}</span>
+                  </div>
+                  <p className={`mt-1 text-[10px] ${active ? "text-[#7db7ff]" : "text-[#94a3b8]"}`}>
+                    {active ? "ready" : "queued"}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+
+        </aside>
       </div>
 
-      <div className="border-t border-white/10 bg-[#0c171a] p-4">
-        <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-2">
-          {quickReplies.map((reply) => (
+      <div className="border-t border-[#1e3a5f] bg-[#081426] p-3">
+        <div className="no-scrollbar mb-2 flex gap-2 overflow-x-auto pb-1">
+          {quickActions.map((action) => (
             <button
-              key={reply}
+              key={action.label}
               type="button"
-              onClick={() => sendMessage(reply)}
-              className="shrink-0 rounded-[999px] border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-white/62 transition hover:border-[#36e6d5]/35 hover:bg-[#36e6d5]/10 hover:text-[#a8fff6] active:scale-[0.98]"
+              onClick={() => sendMessage(action.prompt)}
+              className="shrink-0 rounded-[14px] border border-[#1e3a5f] bg-[#09172b] px-3.5 py-2.5 text-left transition hover:-translate-y-0.5 hover:border-[#60a5fa] hover:bg-[#102449] active:scale-[0.98]"
             >
-              {reply}
+              <span className="block text-xs font-semibold text-[#eef5ff]">{action.label}</span>
+              <span className="mt-1 block text-[11px] text-[#94a3b8]">{action.description}</span>
             </button>
           ))}
         </div>
@@ -171,12 +265,12 @@ export function ChatWidget() {
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder="Type your response..."
-            className="min-w-0 flex-1 rounded-[16px] border border-white/10 bg-[#05090b] px-5 py-3.5 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[#36e6d5]/55 focus:bg-[#071012] focus:ring-4 focus:ring-[#36e6d5]/10"
+            className="min-w-0 flex-1 rounded-[16px] border border-[#1e3a5f] bg-[#07101f] px-5 py-3 text-sm text-[#eef5ff] outline-none transition placeholder:text-[#64748b] focus:border-[#60a5fa] focus:bg-[#09172b] focus:ring-4 focus:ring-[#1e3a5f]"
           />
           <button
             type="submit"
             aria-label="Send message"
-            className="min-w-24 rounded-[16px] bg-[#36e6d5] px-5 py-3.5 text-sm font-semibold text-[#031311] transition hover:bg-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"
+            className="min-w-24 rounded-[16px] bg-[#3b82f6] px-5 py-3 text-sm font-semibold text-[#ffffff] transition hover:bg-[#2563eb] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"
             disabled={isLoading || !input.trim()}
           >
             Send
