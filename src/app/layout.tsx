@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
-      <body className="bg-[#070b0e] font-sans text-white antialiased">{children}</body>
+      <body className="bg-[#fafafa] font-sans text-[#262626] antialiased">{children}</body>
     </html>
   );
 }
