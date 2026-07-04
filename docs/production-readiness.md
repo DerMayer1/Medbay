@@ -1,6 +1,8 @@
 # Production Readiness
 
-Medbay now runs in a production-provider posture. It does not include demo mode, in-memory persistence, simulated email, simulated calendar behavior, or AI response fallbacks for missing credentials.
+Medbay now runs in a production-provider posture. It does not include demo mode, in-memory persistence, simulated email, simulated calendar behavior, or silent provider substitution for missing credentials.
+
+The public chat route has a safety-preserving degraded response path for transient infrastructure failures. That response is marked with `persistenceAvailable: false` and does not pretend the case was submitted. Provider modules themselves still fail explicitly when required credentials are missing.
 
 ## Required Providers
 
@@ -11,7 +13,7 @@ The application expects these services to be configured:
 - Resend for operational notification delivery.
 - Google Calendar API for availability and appointment event creation.
 
-Missing provider credentials fail explicitly instead of silently switching to local behavior.
+Missing provider credentials fail explicitly inside the provider modules instead of silently switching to local behavior.
 
 ## Production-Ready Pieces
 
@@ -29,7 +31,7 @@ Missing provider credentials fail explicitly instead of silently switching to lo
 
 - Rate limits are process-local and should be moved to a distributed store.
 - Notifications are sent synchronously in the request path.
-- Appointment requests have status controls, but no full staff approval queue yet.
+- Appointment requests can be persisted from the intake workflow and managed by status controls, but there is no full staff approval queue yet.
 - Audit trail rendering is intentionally compact.
 
 ## Redis / Upstash / Vercel KV Needs
