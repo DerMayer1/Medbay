@@ -270,11 +270,38 @@ export async function handlePatientMessage(
   }
 
   if (status === "appointment_requested") {
+    let appointmentMetadata: Record<string, unknown> = {
+      availability: mergedFields.availability,
+      persisted: false,
+    };
+
+    if (intakeCase.status !== "appointment_requested" && dependencies.calendarProvider) {
+      try {
+        const appointment = await dependencies.calendarProvider.requestAppointment({
+          intakeCaseId: updatedCase.id,
+          notes: mergedFields.availability
+            ? `Patient availability: ${mergedFields.availability}`
+            : "Appointment requested from intake workflow.",
+        });
+        appointmentMetadata = {
+          ...appointmentMetadata,
+          appointmentId: appointment.id,
+          persisted: true,
+        };
+      } catch (error) {
+        console.error("calendar_provider_error", error);
+        appointmentMetadata = {
+          ...appointmentMetadata,
+          providerError: error instanceof Error ? error.message : "Calendar provider failed.",
+        };
+      }
+    }
+
     await dependencies.auditLogger.record({
       action: "appointment_requested",
       entityType: "intake_case",
       entityId: updatedCase.id,
-      metadata: { availability: mergedFields.availability },
+      metadata: appointmentMetadata,
     });
   }
 
