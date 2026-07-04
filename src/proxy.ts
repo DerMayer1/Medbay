@@ -1,11 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isPortfolioAdminCookie, PORTFOLIO_ADMIN_COOKIE } from "@/lib/portfolioAccess";
 
 export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/admin/login")) {
+    return NextResponse.next();
+  }
+
+  if (isPortfolioAdminCookie(request.cookies.get(PORTFOLIO_ADMIN_COOKIE)?.value)) {
     return NextResponse.next();
   }
 
