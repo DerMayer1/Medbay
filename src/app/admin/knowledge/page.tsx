@@ -1,12 +1,14 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { KnowledgeEditor } from "@/components/admin/KnowledgeEditor";
-import { demoKnowledge, withDemoFallback } from "@/lib/demoData";
+import { withDemoFallback } from "@/lib/demoData";
+import { listDemoKnowledge } from "@/lib/demoStore";
 import { isPortfolioAdminSession } from "@/lib/portfolioAccess";
 import { listKnowledge } from "@/lib/repository";
 
 export const dynamic = "force-dynamic";
 
 export default async function KnowledgePage() {
+  const demoKnowledge = listDemoKnowledge();
   const items = (await isPortfolioAdminSession()) ? demoKnowledge : await withDemoFallback(listKnowledge(), demoKnowledge);
 
   return (
