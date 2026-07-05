@@ -284,6 +284,24 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
+function Signal({ label, value, tone }: { label: string; value: string; tone: "blue" | "green" | "warning" | "red" }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/80 bg-white/80 px-3 py-2">
+      <span className="text-xs font-medium text-[#737373]">{label}</span>
+      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pillClass(tone)}`}>{value}</span>
+    </div>
+  );
+}
+
+function DecisionMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-t border-[#ededed] px-5 py-4 md:border-l md:border-t-0">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#a3a3a3]">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-[#262626]">{value}</p>
+    </div>
+  );
+}
+
 function AuditMetadata({ event }: { event: AuditEvent }) {
   const rows = auditRows(event);
   if (rows.length === 0) return null;
