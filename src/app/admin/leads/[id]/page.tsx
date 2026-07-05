@@ -1,13 +1,26 @@
 import { notFound } from "next/navigation";
 import type { ComponentType, ReactNode } from "react";
-import { AlertTriangle, CalendarDays, ClipboardList, FileText, UserRound } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  FileText,
+  Route,
+  ShieldCheck,
+  UserCheck,
+  UserRound,
+} from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { CaseStatusControls } from "@/components/admin/CaseStatusControls";
 import { ConversationViewer } from "@/components/admin/ConversationViewer";
+import { InternalNotesEditor } from "@/components/admin/InternalNotesEditor";
 import { evaluateIntakeCompleteness } from "@/features/intake/domain/intake-completeness";
-import type { AuditEvent, IntakeCaseStatus } from "@/features/intake/domain/types";
+import type { AuditEvent, IntakeCase, IntakeCaseStatus } from "@/features/intake/domain/types";
 import { legacyStatusToIntakeStatus, leadToIntakeCase, leadToPatient } from "@/features/intake/infrastructure/legacy-mappers";
-import { getDemoLeadBundle, withDemoFallback } from "@/lib/demoData";
+import { withDemoFallback } from "@/lib/demoData";
+import { getDemoLeadBundle } from "@/lib/demoStore";
 import { isPortfolioAdminSession } from "@/lib/portfolioAccess";
 import { getLeadBundle } from "@/lib/repository";
 import type { ChatMessage } from "@/types/lead";
