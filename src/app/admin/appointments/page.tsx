@@ -1,13 +1,15 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AppointmentCreator } from "@/components/admin/AppointmentCreator";
 import { AppointmentTable } from "@/components/admin/AppointmentTable";
-import { demoAppointments, withDemoFallback } from "@/lib/demoData";
+import { withDemoFallback } from "@/lib/demoData";
+import { listDemoAppointments } from "@/lib/demoStore";
 import { isPortfolioAdminSession } from "@/lib/portfolioAccess";
 import { listAppointments } from "@/lib/repository";
 
 export const dynamic = "force-dynamic";
 
 export default async function AppointmentsPage() {
+  const demoAppointments = listDemoAppointments();
   const appointments = (await isPortfolioAdminSession())
     ? demoAppointments
     : await withDemoFallback(listAppointments(), demoAppointments);
