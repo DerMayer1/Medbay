@@ -547,20 +547,22 @@ function SystemExplanationBand() {
           </div>
         </div>
 
-        <div className="relative min-h-[520px] overflow-hidden rounded-[34px] border border-[#e5e5e5] bg-[#fbfbfb] shadow-[0_42px_130px_-90px_rgba(37,99,235,0.78)]">
-          <div className="flex h-14 items-center justify-between border-b border-[#e5e5e5] bg-white px-5">
+        <div className="relative h-[540px] overflow-hidden rounded-[28px] border border-[#dbeafe] bg-[#071426] shadow-[0_42px_130px_-86px_rgba(37,99,235,0.9)] lg:h-[560px]">
+          <div className="flex h-14 items-center justify-between border-b border-white/10 bg-[#0b1b31] px-5">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-[#93c5fd]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#60a5fa]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#2563eb]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#3b82f6]" />
             </div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#737373]">
-              <span>{currentEditor.file}</span>
-              <span className="rounded-lg bg-[#eff6ff] px-2 py-1 text-[#2563eb]">{currentEditor.badge}</span>
+            <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-[#93a4bb]">
+              <span className="truncate">{currentEditor.file}</span>
+              <span className="shrink-0 rounded-md bg-[#1d4ed8]/20 px-2 py-1 text-[#93c5fd] ring-1 ring-[#3b82f6]/25">
+                {currentEditor.badge}
+              </span>
             </div>
           </div>
 
-          <div className="flex h-12 items-center gap-2 overflow-x-auto border-b border-[#e5e5e5] bg-[#fafafa] px-4">
+          <div className="flex h-12 items-center gap-2 overflow-x-auto border-b border-white/10 bg-[#08172a] px-4">
             {editorTabs.map((tab, index) => (
               <button
                 key={tab.label}
@@ -568,8 +570,8 @@ function SystemExplanationBand() {
                 onClick={() => setActiveEditor(index)}
                 className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                   activeEditor === index
-                    ? "bg-[#3b82f6] text-white shadow-[0_10px_24px_-18px_rgba(37,99,235,0.8)]"
-                    : "text-[#737373] hover:bg-[#eff6ff] hover:text-[#262626]"
+                    ? "bg-[#3b82f6] text-white shadow-[0_12px_34px_-18px_rgba(59,130,246,0.9)]"
+                    : "text-[#8aa0bb] hover:bg-white/6 hover:text-white"
                 }`}
               >
                 {tab.label}
@@ -577,25 +579,19 @@ function SystemExplanationBand() {
             ))}
           </div>
 
-          <div className="relative h-[calc(100%-6.5rem)] overflow-hidden px-6 py-5 font-mono text-[12px] leading-6">
-            <motion.div
-              aria-hidden="true"
-              className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,rgba(59,130,246,0.14),rgba(59,130,246,0))]"
-              animate={{ y: [-80, 430, -80] }}
-              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-            />
+          <div className="relative h-[calc(100%-6.5rem)] overflow-hidden font-mono text-[12px] leading-6">
             <motion.div
               key={currentEditor.file}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28 }}
-              className="relative"
+              className="relative h-full px-5 py-5"
             >
-              <div className="mb-4 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-[#3b82f6]">
+              <div className="mb-4 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-[#60a5fa]">
                 <span>{currentEditor.language}</span>
                 <span>{currentEditor.code.length} lines</span>
               </div>
-              <div className="space-y-0.5">
+              <div className="h-[calc(100%-2.5rem)] overflow-auto rounded-2xl border border-white/8 bg-[#06101f] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                 {currentEditor.code.map((line, index) => {
                   const trimmed = line.trim();
                   const keyword = trimmed.split(/\s+/)[0] || "";
@@ -609,13 +605,13 @@ function SystemExplanationBand() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.22, delay: index * 0.018 }}
                       whileHover={{ x: 6 }}
-                      className="group -mx-3 flex min-h-6 gap-4 rounded-lg px-3 transition-colors hover:bg-[#eff6ff]"
+                      className="group flex min-h-6 min-w-max gap-4 rounded-lg px-3 transition-colors hover:bg-[#0f2745]"
                     >
-                      <span className="w-6 select-none text-right text-[#a3a3a3]">{index + 1}</span>
-                      <pre className="min-w-0 flex-1 overflow-visible whitespace-pre-wrap break-words text-[#262626]">
+                      <span className="w-6 select-none text-right text-[#5d718b]">{index + 1}</span>
+                      <pre className="flex-1 whitespace-pre text-[#dbeafe]">
                         {line ? (
                           <>
-                            <span className={isSyntax ? "text-[#ef4444] transition-colors group-hover:text-[#2563eb]" : ""}>
+                            <span className={isSyntax ? "text-[#7dd3fc] transition-colors group-hover:text-[#93c5fd]" : ""}>
                               {line.slice(0, line.indexOf(keyword) + keyword.length)}
                             </span>
                             {line.slice(line.indexOf(keyword) + keyword.length)}
@@ -630,7 +626,7 @@ function SystemExplanationBand() {
               </div>
             </motion.div>
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,rgba(251,251,251,0),#fbfbfb)]" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,rgba(7,20,38,0),#071426)]" />
           </div>
         </div>
       </div>
