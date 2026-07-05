@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDemoLeadBundle, updateDemoLeadRecord } from "@/lib/demoStore";
+import { isPortfolioAdminSession } from "@/lib/portfolioAccess";
 import { getLeadBundle, updateLeadRecord, writeAuditLog } from "@/lib/repository";
 import { enforceRateLimit, noStoreJson, rejectCrossOriginMutation, requireAdmin } from "@/lib/security";
 import { leadPatchSchema } from "@/lib/validators";
@@ -12,6 +14,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (authError) return authError;
 
   const { id } = await params;
+  if (await isPortfolioAdminSession()) return noStoreJson(getDemoLeadBundle(id));
+
   return noStoreJson(await getLeadBundle(id));
 }
 
@@ -25,8 +29,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const { id } = await params;
   const input = leadPatchSchema.parse(await request.json());
+  const isDemo = await isPortfolioAdminSession();
   if (input.status) {
-    const bundle = await getLeadBundle(id);
+    const bundle = isDemo ? getDemoLeadBundle(id) : await getLeadBundle(id);
     const currentStatus = legacyStatusToIntakeStatus(String(bundle.lead?.status || "new"));
     const nextStatus = legacyStatusToIntakeStatus(input.status);
     const transition = validateIntakeTransition(currentStatus, nextStatus);
@@ -34,6 +39,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   try {
+    if (isDemo) return noStoreJson(updateDemoLeadRecord(id, input));
+
     const data = await updateLeadRecord(id, input);
     await writeAuditLog({ action: "status_changed", entityType: "intake_case", entityId: id, metadata: input });
     return noStoreJson(data);
