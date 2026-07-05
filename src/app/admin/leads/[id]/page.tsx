@@ -112,36 +112,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           <ConversationViewer messages={(bundle.messages || []) as ChatMessage[]} />
 
           <Panel icon={FileText} title="Internal notes">
-            <textarea
-              readOnly
-              placeholder="Internal notes placeholder for care coordination and operations follow-up."
-              className="h-28 w-full rounded-lg border border-[#e5e5e5] bg-[#fafafa] p-3 text-sm text-[#262626] outline-none"
-            />
+            <InternalNotesEditor caseId={intakeCase.id} initialNotes={String(bundle.lead.notes || "")} />
           </Panel>
 
           <Panel icon={FileText} title="Audit trail">
-            <div className="space-y-3">
-              {auditEvents.map((event) => (
-                <div
-                  key={`${event.action}-${event.createdAt || event.entityId}`}
-                  className="rounded-lg border border-[#ededed] bg-[#fafafa] p-4"
-                >
-                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
-                    <div>
-                      <p className="text-sm font-semibold text-[#262626]">{formatAuditAction(event.action)}</p>
-                      <p className="mt-1 text-xs text-[#737373]">{event.createdAt || "Timestamp unavailable"}</p>
-                    </div>
-                    {event.actor ? (
-                      <span className="rounded-full bg-[#dbeafe] px-2.5 py-1 text-xs font-semibold text-[#1d4ed8]">
-                        {event.actor}
-                      </span>
-                    ) : null}
-                  </div>
-                  <AuditMetadata event={event} />
-                </div>
-              ))}
-              {auditEvents.length === 0 ? <p className="text-sm text-[#737373]">No audit events recorded yet.</p> : null}
-            </div>
+            <AuditTrail auditEvents={auditEvents} />
           </Panel>
         </section>
       </div>
