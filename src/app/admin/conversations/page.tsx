@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { legacyStatusToIntakeStatus } from "@/features/intake/infrastructure/legacy-mappers";
-import { demoConversations, withDemoFallback } from "@/lib/demoData";
+import { withDemoFallback } from "@/lib/demoData";
+import { listDemoConversations } from "@/lib/demoStore";
 import { isPortfolioAdminSession } from "@/lib/portfolioAccess";
 import { listConversations } from "@/lib/repository";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConversationsPage() {
+  const demoConversations = listDemoConversations();
   const conversations = (await isPortfolioAdminSession())
     ? demoConversations
     : await withDemoFallback(listConversations(), demoConversations);
