@@ -124,6 +124,135 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   );
 }
 
+function CaseDecisionPanel({
+  intakeCase,
+  auditEvents,
+  riskFlags,
+}: {
+  intakeCase: IntakeCase;
+  auditEvents: AuditEvent[];
+  riskFlags: string[];
+}) {
+  const policyEvent = auditEvents.find((event) => event.action === "policy_evaluated");
+  const decision = String(policyEvent?.metadata?.decision || (intakeCase.handoffRequired ? "escalate" : "allow"));
+  const severity = String(policyEvent?.metadata?.severity || (intakeCase.handoffRequired ? "warning" : "info"));
+  const tone = decisionTone(decision, severity);
+  const nextAction = getNextAction(intakeCase, decision);
+
+  return (
+    <section className={`overflow-hidden rounded-xl border ${tone.border} ${tone.bg}`}>
+      <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex gap-4">
+          <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${tone.iconBg} ${tone.iconText}`}>
+            {intakeCase.handoffRequired ? <AlertTriangle className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
+          </div>
+          <div>
+            <p className="medbay-label">Case decision</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#262626]">{tone.title}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#737373]">{tone.description}</p>
+          </div>
+        </div>
+
+        <div className="grid min-w-[230px] gap-2 text-sm">
+          <Signal label="Policy" value={formatAuditAction(decision)} tone={tone.pill} />
+          <Signal label="Severity" value={formatAuditAction(severity)} tone={severity === "warning" ? "warning" : tone.pill} />
+          <Signal label="Next action" value={nextAction} tone="blue" />
+        </div>
+      </div>
+
+      <div className="grid border-t border-black/5 bg-white/60 md:grid-cols-3">
+        <DecisionMetric label="Risk flags" value={riskFlags.length ? riskFlags.join(", ") : "None detected"} />
+        <DecisionMetric label="Case status" value={intakeCase.status} />
+        <DecisionMetric label="Handoff" value={intakeCase.handoffRequired ? "Required" : "Not required"} />
+      </div>
+    </section>
+  );
+}
+
+function CaseTimeline({ intakeCase, auditEvents }: { intakeCase: IntakeCase; auditEvents: AuditEvent[] }) {
+  const steps = [
+    timelineStep("Message received", auditEvents.find((event) => event.action === "message_received"), true),
+    timelineStep("Policy evaluated", auditEvents.find((event) => event.action === "policy_evaluated"), true),
+    timelineStep("Fields extracted", auditEvents.find((event) => event.action === "intake_extracted"), true),
+    timelineStep(
+      intakeCase.handoffRequired ? "Human review requested" : "Appointment requested",
+      auditEvents.find((event) => event.action === "handoff_requested" || event.action === "appointment_requested"),
+      intakeCase.handoffRequired || intakeCase.status === "appointment_requested" || intakeCase.status === "ready_for_scheduling",
+    ),
+  ];
+
+  return (
+    <section className="rounded-xl border border-[#e5e5e5] bg-[#ffffff] p-5">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#dbeafe] text-[#1d4ed8]">
+            <Route className="h-4 w-4" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-[#262626]">Case timeline</h2>
+            <p className="mt-1 text-xs text-[#737373]">Operational path from patient message to staff action.</p>
+          </div>
+        </div>
+        <span className="rounded-full bg-[#eff6ff] px-3 py-1 text-xs font-semibold text-[#1d4ed8]">{intakeCase.status}</span>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+        {steps.map((step, index) => (
+          <div key={step.label} className="relative rounded-xl border border-[#ededed] bg-[#fafafa] p-4">
+            <div className="flex items-start gap-3">
+              <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${step.done ? "bg-[#dbeafe] text-[#1d4ed8]" : "bg-[#f5f5f5] text-[#a3a3a3]"}`}>
+                {step.done ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#a3a3a3]">Step {index + 1}</p>
+                <p className="mt-1 text-sm font-semibold text-[#262626]">{step.label}</p>
+                <p className="mt-2 break-words text-xs leading-5 text-[#737373]">{step.detail}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AuditTrail({ auditEvents }: { auditEvents: AuditEvent[] }) {
+  if (auditEvents.length === 0) return <p className="text-sm text-[#737373]">No audit events recorded yet.</p>;
+
+  return (
+    <div className="relative space-y-4 pl-5 before:absolute before:bottom-3 before:left-[9px] before:top-3 before:w-px before:bg-[#dbeafe]">
+      {auditEvents.map((event) => {
+        const tone = auditTone(event);
+        return (
+          <div key={`${event.action}-${event.createdAt || event.entityId}`} className="relative">
+            <span className={`absolute -left-5 top-4 h-3 w-3 rounded-full ring-4 ring-white ${tone.dot}`} />
+            <div className={`rounded-xl border ${tone.border} bg-[#ffffff] p-4`}>
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-[#262626]">{formatAuditAction(event.action)}</p>
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${tone.pill}`}>
+                      {auditEventLabel(event)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-[#737373]">{event.createdAt || "Timestamp unavailable"}</p>
+                </div>
+                {event.actor ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f5f5f5] px-2.5 py-1 text-xs font-semibold text-[#525252]">
+                    <UserCheck className="h-3 w-3" />
+                    {event.actor}
+                  </span>
+                ) : null}
+              </div>
+              <AuditMetadata event={event} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Panel({
   icon: Icon,
   title,
