@@ -337,6 +337,96 @@ function extractRiskFlags(events: AuditEvent[], handoffRequired: boolean) {
   return flags.length || !handoffRequired ? flags : ["human_review_required"];
 }
 
+function decisionTone(decision: string, severity: string) {
+  if (decision === "block" || severity === "critical") {
+    return {
+      bg: "bg-[#0d1424]/92",
+      border: "border-[#60a5fa]/45",
+      iconBg: "bg-[#1e3a5f]",
+      iconText: "text-[#bfdbfe]",
+      pill: "red" as const,
+      title: "Clinical boundary held",
+      description:
+        "The assistant stopped short of clinical interpretation and preserved the case for staff review with the reason attached.",
+    };
+  }
+
+  if (decision === "escalate" || severity === "warning") {
+    return {
+      bg: "bg-[#0b1324]/92",
+      border: "border-[#3b82f6]/45",
+      iconBg: "bg-[#172f55]",
+      iconText: "text-[#93c5fd]",
+      pill: "warning" as const,
+      title: "Human review required",
+      description: "The case contains a signal that should be handled by clinic staff before the patient receives next steps.",
+    };
+  }
+
+  return {
+    bg: "bg-[#071529]/92",
+    border: "border-[#3b82f6]/45",
+    iconBg: "bg-[#10264a]",
+    iconText: "text-[#93c5fd]",
+    pill: "green" as const,
+    title: "Ready for operational follow-up",
+    description: "The request stayed inside administrative scope and has enough structured context for the operations team.",
+  };
+}
+
+function getNextAction(intakeCase: IntakeCase, decision: string) {
+  if (intakeCase.handoffRequired || decision === "block" || decision === "escalate") return "Review with staff";
+  if (intakeCase.status === "ready_for_scheduling") return "Offer appointment slot";
+  if (intakeCase.status === "appointment_requested") return "Confirm scheduling";
+  if (intakeCase.status === "scheduled") return "Prepare visit";
+  return "Continue intake";
+}
+
+function timelineStep(label: string, event: AuditEvent | undefined, expected: boolean) {
+  return {
+    label,
+    done: Boolean(event || expected),
+    detail: event?.createdAt ? event.createdAt : expected ? "Expected in this workflow" : "Waiting for next action",
+  };
+}
+
+function auditTone(event: AuditEvent) {
+  const severity = String(event.metadata?.severity || "");
+  const decision = String(event.metadata?.decision || "");
+
+  if (decision === "block" || severity === "critical") {
+    return { border: "border-[#60a5fa]/45", dot: "bg-[#60a5fa]", pill: pillClass("red") };
+  }
+
+  if (event.action === "handoff_requested" || decision === "escalate" || severity === "warning") {
+    return { border: "border-[#3b82f6]/45", dot: "bg-[#3b82f6]", pill: pillClass("warning") };
+  }
+
+  if (event.action === "appointment_requested" || event.action === "intake_extracted") {
+    return { border: "border-[#bfdbfe]", dot: "bg-[#3b82f6]", pill: pillClass("blue") };
+  }
+
+  return { border: "border-[#dcfce7]", dot: "bg-[#22c55e]", pill: pillClass("green") };
+}
+
+function auditEventLabel(event: AuditEvent) {
+  const decision = event.metadata?.decision;
+  const severity = event.metadata?.severity;
+  if (decision) return formatAuditAction(String(decision));
+  if (severity) return formatAuditAction(String(severity));
+  if (event.action === "appointment_requested") return "Scheduling";
+  if (event.action === "intake_extracted") return "Structured";
+  if (event.action === "handoff_requested") return "Handoff";
+  return "Recorded";
+}
+
+function pillClass(tone: "blue" | "green" | "warning" | "red") {
+  if (tone === "red") return "bg-[#172f55] text-[#bfdbfe]";
+  if (tone === "warning") return "bg-[#10264a] text-[#93c5fd]";
+  if (tone === "green") return "bg-[#10264a] text-[#93c5fd]";
+  return "bg-[#dbeafe] text-[#1d4ed8]";
+}
+
 function formatAuditAction(action: string) {
   return action
     .split(/[._]/)
