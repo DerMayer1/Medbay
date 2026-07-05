@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { getAllowedNextStatuses } from "@/features/intake/domain/intake-workflow";
 import type { IntakeCaseStatus } from "@/features/intake/domain/types";
 
 export function CaseStatusControls({ caseId, status }: { caseId: string; status: IntakeCaseStatus }) {
+  const router = useRouter();
   const [currentStatus, setCurrentStatus] = useState(status);
   const [isSaving, setIsSaving] = useState(false);
   const allowedStatuses = getAllowedNextStatuses(currentStatus);
@@ -16,7 +18,10 @@ export function CaseStatusControls({ caseId, status }: { caseId: string; status:
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: nextStatus }),
     });
-    if (response.ok) setCurrentStatus(nextStatus);
+    if (response.ok) {
+      setCurrentStatus(nextStatus);
+      router.refresh();
+    }
     setIsSaving(false);
   }
 
