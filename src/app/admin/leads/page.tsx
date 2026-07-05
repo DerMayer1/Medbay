@@ -1,12 +1,14 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { LeadTable } from "@/components/admin/LeadTable";
-import { demoLeads, withDemoFallback } from "@/lib/demoData";
+import { withDemoFallback } from "@/lib/demoData";
+import { listDemoLeads } from "@/lib/demoStore";
 import { isPortfolioAdminSession } from "@/lib/portfolioAccess";
 import { listLeads } from "@/lib/repository";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadsPage() {
+  const demoLeads = listDemoLeads();
   const leads = (await isPortfolioAdminSession()) ? demoLeads : await withDemoFallback(listLeads(), demoLeads);
 
   return (
