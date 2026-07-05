@@ -85,6 +85,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </aside>
 
         <section className="space-y-6">
+          <CaseDecisionPanel intakeCase={intakeCase} auditEvents={auditEvents} riskFlags={riskFlags} />
+          <CaseTimeline intakeCase={intakeCase} auditEvents={auditEvents} />
+
           <Panel icon={FileText} title="AI summary">
             <p className="text-sm leading-6 text-[#737373]">{intakeCase.summary || "No AI summary has been generated yet."}</p>
           </Panel>
