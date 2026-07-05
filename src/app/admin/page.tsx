@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Activity, ArrowUpRight, Clock, UserCheck, Users } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { legacyStatusToIntakeStatus } from "@/features/intake/infrastructure/legacy-mappers";
-import { demoAppointments, demoConversations, demoLeads, withDemoFallback } from "@/lib/demoData";
+import { withDemoFallback } from "@/lib/demoData";
+import { listDemoAppointments, listDemoConversations, listDemoLeads } from "@/lib/demoStore";
 import { isPortfolioAdminSession } from "@/lib/portfolioAccess";
 import { listAppointments, listConversations, listLeads } from "@/lib/repository";
 
@@ -10,6 +11,9 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
   const isDemo = await isPortfolioAdminSession();
+  const demoLeads = listDemoLeads();
+  const demoConversations = listDemoConversations();
+  const demoAppointments = listDemoAppointments();
   const [leads, conversations, appointments] = isDemo
     ? [demoLeads, demoConversations, demoAppointments]
     : await Promise.all([
