@@ -9,7 +9,7 @@ Medbay is an AI-assisted intake platform for clinics. It turns unstructured pati
 
 The reference clinic is fictional: **Northstar Clinic**.
 
-Live demo: [medbay-three.vercel.app](https://medbay-three.vercel.app)
+Live demo: [https://medbay-helix.vercel.app/)
 
 ## Product Preview
 
