@@ -1,32 +1,53 @@
 # Medbay
 
-Medbay is an AI-assisted intake infrastructure case study for clinics. It turns unstructured patient conversations into structured, auditable intake cases with deterministic safety policies, handoff workflows, appointment requests, knowledge-base context, and admin review.
+[![CI](https://github.com/DerMayer1/Medbay/actions/workflows/ci.yml/badge.svg)](https://github.com/DerMayer1/Medbay/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6)](https://www.typescriptlang.org/)
+
+Medbay is an AI-assisted intake platform for clinics. It turns unstructured patient conversations into structured, auditable intake cases with deterministic safety policies, staff handoff workflows, appointment requests, knowledge-base context, and an operations console.
 
 The reference clinic is fictional: **Northstar Clinic**.
 
-## Latest Updates
+Live demo: [medbay-three.vercel.app](https://medbay-three.vercel.app)
 
-- Redesigned the public Medbay surface as a premium dark healthtech interface with a teal clinical accent, dense operational framing, and custom animated workspace visuals.
-- Reworked the intake chat UI so messages, quick replies, and the input area stay contained across desktop and smaller viewports.
-- Restyled the admin login and operations console to match the new clinical operations design language.
-- Added dynamic rendering for protected admin pages so production builds do not prerender Supabase-backed staff views.
-- Hardened the intake pipeline with deterministic administrative fallbacks when AI or notification providers fail.
-- Updated Supabase/Auth setup expectations, including admin profile access and required operational tables.
-- Addressed development hydration noise caused by external attributes injected on the root HTML element.
+## Product Preview
 
-## Problem
+### Patient Intake Assistant
 
-Clinics receive high-volume inbound requests across forms, chat, phone, and messaging channels. The operational problem is not only answering patients quickly. It is converting unstructured requests into structured cases that staff can review safely, prioritize, route, schedule, audit, and close.
+![Patient intake assistant](docs/screenshots/intake-chat.png)
 
-## Product Thesis
+### Staff Operations Console
 
-AI should assist clinic operations by collecting administrative intake data and preparing cases for staff. It should not diagnose, prescribe, interpret clinical results, or replace professional care.
+![Staff operations console](docs/screenshots/admin-console.png)
 
-Medbay is built around this boundary:
+### Intake Case Review
 
-- The AI assistant supports intake, scheduling, knowledge-base answers, and handoff.
+![Intake case review](docs/screenshots/case-review.png)
+
+## Why It Exists
+
+Clinics receive high-volume inbound requests across forms, chat, phone, and messaging channels. The operational problem is not just answering quickly. Staff need structured cases that can be reviewed safely, prioritized, routed, scheduled, audited, and closed.
+
+Medbay is built around one boundary:
+
+- AI assists with administrative intake, scheduling support, knowledge-base answers, and handoff.
 - Deterministic policies decide when to block, escalate, or ask for clarification.
-- Staff review happens in an operations console centered on Intake Cases.
+- Staff review happens in an operations console centered on intake cases.
+
+Medbay does **not** diagnose, prescribe, interpret clinical results, or replace professional care.
+
+## Core Capabilities
+
+- Public intake assistant with conversational data collection.
+- Deterministic safety policy engine for clinical-risk boundaries.
+- Structured intake extraction and completeness scoring.
+- Intake case workflow with validated status transitions.
+- Human handoff for unsafe, urgent, or staff-requested cases.
+- Admin console for case queue, conversations, appointments, and knowledge base.
+- Supabase-backed persistence with audit logs.
+- OpenAI, Resend, and Google Calendar provider integrations.
+- Degraded chat fallback when infrastructure providers are unavailable.
 
 ## Architecture
 
@@ -44,9 +65,21 @@ Public intake assistant
   -> admin case review console
 ```
 
-The business logic lives under `src/features/intake`. Route handlers stay thin, adapters isolate persistence and providers, and the domain layer owns deterministic workflow and policy decisions.
+Business logic lives under `src/features/intake`. Route handlers stay thin, adapters isolate persistence and provider integrations, and the domain layer owns deterministic workflow and policy decisions.
+
+Key files:
+
+- `src/app/api/chat/route.ts` - public chat API route.
+- `src/features/intake/application/handle-patient-message.ts` - main intake use case.
+- `src/features/intake/domain/policy-engine.ts` - deterministic safety decisions.
+- `src/features/intake/domain/intake-workflow.ts` - case status transitions.
+- `src/features/intake/domain/intake-completeness.ts` - required field scoring.
+- `src/features/intake/infrastructure/adapters.ts` - Supabase/OpenAI/Resend/Calendar adapters.
+- `supabase/migrations` - database schema and RLS policies.
 
 ## Domain Model
+
+The product is modeled around intake operations rather than a generic lead funnel.
 
 Core concepts:
 
@@ -62,7 +95,7 @@ Core concepts:
 - `KnowledgeBaseItem`
 - `AuditEvent`
 
-The Supabase schema keeps the original `leads` table for backwards compatibility, but application code and UI now expose the product domain as Intake Cases.
+The Supabase schema keeps the original `leads` table for backwards compatibility, but application code and UI expose the product domain as **Intake Cases**.
 
 ## Intake Workflow
 
@@ -77,11 +110,11 @@ Supported intake case statuses:
 - `closed`
 - `discarded`
 
-Workflow transitions are deterministic in `src/features/intake/domain/intake-workflow.ts`. The admin case review console only presents valid next transitions.
+Workflow transitions are deterministic in `src/features/intake/domain/intake-workflow.ts`. The admin case review console only presents valid next transitions, and the API rejects invalid transitions.
 
-## AI Safety and Policy Engine
+## AI Safety
 
-The policy engine in `src/features/intake/domain/policy-engine.ts` evaluates:
+The policy engine evaluates:
 
 - clinical advice requests
 - diagnosis requests
@@ -92,49 +125,19 @@ The policy engine in `src/features/intake/domain/policy-engine.ts` evaluates:
 - scheduling attempts without contact information
 - low-confidence extraction
 
-Policy decisions return `allow`, `block`, `escalate`, or `ask_clarifying_question`, plus severity, reason, handoff state, and safe response guidance. Assistant output is also validated before it is persisted.
-
-## Production Tradeoffs
-
-Production-ready pieces:
-
-- typed domain modules
-- deterministic workflow validation
-- deterministic safety policy engine
-- thin route handler for chat
-- Zod request validation
-- Supabase-compatible persistence
-- audit event model
-- rate limiting and same-origin mutation checks
-
-Current simplifications:
-
-- rate limits are process-local
-- notifications are synchronous
-- appointment requests do not require staff approval UI beyond status controls
-- audit log rendering is minimal
-
-For a production clinic deployment, see `docs/production-readiness.md`.
-
-## Engineering Highlights
-
-- Domain-first intake modeling instead of generic chatbot state.
-- Use-case orchestration in `handlePatientMessage`.
-- Explicit interfaces for repositories, AI, notifications, calendar, and audit.
-- Workflow and policy modules covered with Vitest tests.
-- Backwards-compatible migration path from `leads` to Intake Cases.
-- Provider configuration is explicit: missing Supabase, OpenAI, Resend, or Google Calendar credentials fail fast inside provider modules. The public chat route may return a marked degraded response when infrastructure is unavailable so patients are not shown a raw failure.
+Policy decisions return `allow`, `block`, `escalate`, or `ask_clarifying_question`, plus severity, reason, handoff state, and safe response guidance. Assistant output is validated before it is persisted.
 
 ## Tech Stack
 
 - Next.js App Router
+- React
 - TypeScript
 - Tailwind CSS
 - Supabase / PostgreSQL
 - OpenAI API
-- Zod
 - Resend
 - Google Calendar API
+- Zod
 - Vitest
 - Vercel
 
@@ -152,10 +155,9 @@ Open `http://localhost:3000`.
 
 ```env
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+NODE_ENV=development
 
 OPENAI_API_KEY=sk-...
-# Model used for intake extraction and response generation.
-# gpt-4o recommended for production. gpt-4o-mini acceptable for dev/demo.
 OPENAI_MODEL=gpt-4o
 
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -172,39 +174,69 @@ GOOGLE_REFRESH_TOKEN=your_google_refresh_token
 GOOGLE_CALENDAR_ID=primary
 CLINIC_TIMEZONE=America/New_York
 DEFAULT_APPOINTMENT_DURATION_MINUTES=45
+
+ADMIN_EMAIL=
+MEDBAY_PORTFOLIO_ADMIN=true
 ```
 
-## Running Tests
+Provider configuration is explicit. Missing Supabase, OpenAI, Resend, or Google Calendar credentials fail fast inside provider modules. The public chat route may return a marked degraded response when infrastructure is unavailable so patients are not shown a raw failure.
+
+## Scripts
 
 ```bash
-npm run test
-npm run lint
-npm run build
+npm run dev        # Start local development server
+npm run build      # Create production build
+npm run start      # Start production server
+npm run typecheck  # Run TypeScript checks
+npm run lint       # Run ESLint
+npm test           # Run Vitest suite
 ```
 
-## Screenshots
+## Production Notes
 
-### Patient Intake Assistant
-![Intake Chat](docs/screenshots/intake-chat.png)
+Production-ready pieces:
 
-### Admin Operations Console
-![Admin Console](docs/screenshots/admin-console.png)
+- typed domain modules
+- deterministic workflow validation
+- deterministic safety policy engine
+- thin route handler for chat
+- Zod request validation
+- Supabase-compatible persistence
+- audit event model
+- rate limiting and same-origin mutation checks
+- Supabase Auth and admin role checks for protected routes
 
-### Intake Case Review
-![Case Review](docs/screenshots/case-review.png)
+Current simplifications:
+
+- rate limits are process-local
+- notifications are synchronous
+- single-tenant reference implementation
+- appointment requests do not require staff approval UI beyond status controls
+- audit log rendering is intentionally minimal
+
+For a production clinic deployment checklist, see `docs/production-readiness.md`.
+
+## Documentation
+
+- `docs/product-spec.md` - product goals and acceptance criteria.
+- `docs/architecture.md` - runtime and feature boundaries.
+- `docs/domain-model.md` - product entities and workflow concepts.
+- `docs/workflow.md` - intake state machine behavior.
+- `docs/ai-safety.md` - AI safety and policy constraints.
+- `docs/security-hardening.md` - security controls and Vercel firewall recommendations.
+- `ARCHITECTURE.md` - high-level request flow.
 
 ## Architecture Decisions
 
 **Why deterministic policy over pure LLM judgment**  
-Clinical intake cannot rely on probabilistic AI output for safety decisions.
-The policy engine runs before and after the AI layer, making escalation and
-blocking decisions deterministic regardless of model behavior.
+Clinical intake cannot rely on probabilistic AI output for safety decisions. The policy engine runs before and after the AI layer, making escalation and blocking decisions deterministic regardless of model behavior.
 
 **Why use-case orchestration over route handlers**  
-Business logic lives in `handlePatientMessage`, not in the Next.js route.
-This keeps the AI provider, repository, notification, and calendar adapters
-swappable without touching the domain.
+Business logic lives in `handlePatientMessage`, not in the Next.js route. This keeps the AI provider, repository, notification, and calendar adapters swappable without touching the domain.
 
 **Why Supabase over a custom auth stack**  
-Clinic staff authentication is not the product. Supabase handles it so the
-domain layer can focus on intake workflow and safety policy.
+Clinic staff authentication is not the product. Supabase handles it so the domain layer can focus on intake workflow and safety policy.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
