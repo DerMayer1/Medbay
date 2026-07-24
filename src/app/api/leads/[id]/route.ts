@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDemoLeadBundle, updateDemoLeadRecord } from "@/lib/demoStore";
-import { isPortfolioAdminSession } from "@/lib/portfolioAccess";
 import { getLeadBundle, updateLeadRecord, writeAuditLog } from "@/lib/repository";
-import { enforceRateLimit, noStoreJson, rejectCrossOriginMutation, requireAdmin } from "@/lib/security";
+import { enforceRateLimit, noStoreJson, rejectCrossOriginMutation, resolveAdminAccess } from "@/lib/security";
 import { leadPatchSchema } from "@/lib/validators";
 import { validateIntakeTransition } from "@/features/intake/domain/intake-workflow";
 import { legacyStatusToIntakeStatus } from "@/features/intake/infrastructure/legacy-mappers";
@@ -10,11 +9,11 @@ import { legacyStatusToIntakeStatus } from "@/features/intake/infrastructure/leg
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const rateLimitError = enforceRateLimit(_request, "admin_leads", { limit: 120, windowMs: 60_000 });
   if (rateLimitError) return rateLimitError;
-  const authError = await requireAdmin();
-  if (authError) return authError;
+  const access = await resolveAdminAccess();
+  if (!access.ok) return access.response;
 
   const { id } = await params;
-  if (await isPortfolioAdminSession()) return noStoreJson(getDemoLeadBundle(id));
+  if (access.demo) return noStoreJson(getDemoLeadBundle(id));
 
   return noStoreJson(await getLeadBundle(id));
 }
@@ -22,14 +21,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const rateLimitError = enforceRateLimit(request, "admin_leads_mutation", { limit: 30, windowMs: 60_000 });
   if (rateLimitError) return rateLimitError;
-  const authError = await requireAdmin();
-  if (authError) return authError;
+  const access = await resolveAdminAccess();
+  if (!access.ok) return access.response;
   const originError = rejectCrossOriginMutation(request);
   if (originError) return originError;
 
   const { id } = await params;
   const input = leadPatchSchema.parse(await request.json());
-  const isDemo = await isPortfolioAdminSession();
+  const isDemo = access.demo;
   if (input.status) {
     const bundle = isDemo ? getDemoLeadBundle(id) : await getLeadBundle(id);
     const currentStatus = legacyStatusToIntakeStatus(String(bundle.lead?.status || "new"));

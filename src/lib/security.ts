@@ -101,12 +101,12 @@ export function rejectCrossOriginMutation(request: NextRequest) {
   return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
 }
 
-export async function requireAdmin() {
-  const cookieStore = await cookies();
-  if (isPortfolioAdminCookie(cookieStore.get(PORTFOLIO_ADMIN_COOKIE)?.value)) {
-    return null;
-  }
-
+/**
+ * Verifies a real Supabase admin session. Returns an error response when the
+ * caller is not an authenticated admin, or null when they are. This path never
+ * consults the portfolio/demo cookie, so it can only grant access to real data.
+ */
+async function verifyRealAdmin() {
   const hasSupabaseEnv = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
   if (!hasSupabaseEnv) {
@@ -136,6 +136,36 @@ export async function requireAdmin() {
   }
 
   return null;
+}
+
+/**
+ * Strict real-admin gate. A portfolio/demo cookie does NOT satisfy this check,
+ * so any route guarded only by `requireAdmin` fails closed for demo sessions
+ * instead of leaking production data. Routes that intentionally support the
+ * demo must use `resolveAdminAccess` and branch on `demo`.
+ */
+export async function requireAdmin() {
+  return verifyRealAdmin();
+}
+
+export type AdminAccess =
+  | { ok: true; demo: boolean }
+  | { ok: false; response: NextResponse };
+
+/**
+ * Resolves admin access, distinguishing a real Supabase admin from a
+ * credential-less portfolio/demo session. Callers MUST serve demo data and
+ * avoid real infrastructure whenever `demo` is true.
+ */
+export async function resolveAdminAccess(): Promise<AdminAccess> {
+  const cookieStore = await cookies();
+  if (isPortfolioAdminCookie(cookieStore.get(PORTFOLIO_ADMIN_COOKIE)?.value)) {
+    return { ok: true, demo: true };
+  }
+
+  const response = await verifyRealAdmin();
+  if (response) return { ok: false, response };
+  return { ok: true, demo: false };
 }
 
 export function noStoreJson(data: unknown, init?: ResponseInit) {

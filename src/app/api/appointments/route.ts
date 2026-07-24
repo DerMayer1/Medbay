@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCalendarEvent } from "@/lib/calendar";
+import { createDemoAppointment, listDemoAppointments } from "@/lib/demoStore";
 import { createAppointmentRecord, listAppointments, writeAuditLog } from "@/lib/repository";
-import { enforceRateLimit, noStoreJson, rejectCrossOriginMutation, requireAdmin } from "@/lib/security";
+import { enforceRateLimit, noStoreJson, rejectCrossOriginMutation, resolveAdminAccess } from "@/lib/security";
 import { appointmentPayloadSchema } from "@/lib/validators";
 
 export async function GET(request: NextRequest) {
   const rateLimitError = enforceRateLimit(request, "admin_appointments", { limit: 120, windowMs: 60_000 });
   if (rateLimitError) return rateLimitError;
-  const authError = await requireAdmin();
-  if (authError) return authError;
+  const access = await resolveAdminAccess();
+  if (!access.ok) return access.response;
+  if (access.demo) return noStoreJson(listDemoAppointments());
 
   try {
     return noStoreJson(await listAppointments());
@@ -20,12 +22,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const rateLimitError = enforceRateLimit(request, "admin_appointments_mutation", { limit: 20, windowMs: 60_000 });
   if (rateLimitError) return rateLimitError;
-  const authError = await requireAdmin();
-  if (authError) return authError;
+  const access = await resolveAdminAccess();
+  if (!access.ok) return access.response;
   const originError = rejectCrossOriginMutation(request);
   if (originError) return originError;
 
   const payload = appointmentPayloadSchema.parse(await request.json());
+
+  // Demo sessions never touch the real calendar provider or database.
+  if (access.demo) {
+    return noStoreJson(
+      createDemoAppointment({
+        lead_id: payload.leadId,
+        conversation_id: payload.conversationId,
+        start_time: payload.startTime,
+        end_time: payload.endTime,
+        modality: payload.modality,
+        status: payload.status || "requested",
+        notes: payload.notes,
+      }),
+    );
+  }
+
   let googleEventId: string | undefined;
 
   if (payload.createGoogleEvent && payload.startTime && payload.endTime) {
