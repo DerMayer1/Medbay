@@ -176,7 +176,9 @@ CLINIC_TIMEZONE=America/New_York
 DEFAULT_APPOINTMENT_DURATION_MINUTES=45
 
 ADMIN_EMAIL=
-MEDBAY_PORTFOLIO_ADMIN=true
+# Credential-less demo admin. Only "true" enables it; unset/false fails closed.
+# Never enable in a deployment where the admin console can reach real data.
+MEDBAY_PORTFOLIO_ADMIN=false
 ```
 
 Provider configuration is explicit. Missing Supabase, OpenAI, Resend, or Google Calendar credentials fail fast inside provider modules. The public chat route may return a marked degraded response when infrastructure is unavailable so patients are not shown a raw failure.

@@ -159,6 +159,41 @@ export function getDemoLeadBundle(id: string) {
   });
 }
 
+export function createDemoKnowledgeItem(input: Omit<KnowledgeItem, "id">) {
+  const store = getStore();
+  const item = {
+    ...input,
+    id: crypto.randomUUID(),
+    created_at: timestamp(),
+    updated_at: timestamp(),
+  } as KnowledgeItem;
+  store.knowledge.unshift(item);
+  return clone(item);
+}
+
+export function updateDemoKnowledgeItem(id: string, input: Partial<KnowledgeItem>) {
+  const store = getStore();
+  const index = store.knowledge.findIndex((item) => item.id === id);
+  if (index < 0) throw new Error("Demo knowledge item was not found.");
+
+  const updated = { ...store.knowledge[index], ...input, id, updated_at: timestamp() };
+  store.knowledge[index] = updated;
+  return clone(updated);
+}
+
+export function createDemoAppointment(input: Record<string, unknown>) {
+  const store = getStore();
+  const appointment = {
+    ...clone(demoAppointments[0]),
+    ...input,
+    id: crypto.randomUUID(),
+    created_at: timestamp(),
+    updated_at: timestamp(),
+  } as DemoAppointment;
+  store.appointments.unshift(appointment);
+  return clone(appointment);
+}
+
 export function updateDemoLeadRecord(id: string, input: Partial<Lead> & { notes?: string }) {
   const store = getStore();
   const index = store.leads.findIndex((item) => item.id === id);
