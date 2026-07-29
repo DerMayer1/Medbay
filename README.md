@@ -5,7 +5,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6)](https://www.typescriptlang.org/)
 
-Medbay 2.0.1 is a synthetic Stage 1 prototype for source-linked cardiology visit preparation. It validates the safety-critical path before any clinic pilot: born-digital PDF boundaries, page-level evidence, strict brief schemas, deterministic citation checks, clinician-only review, immutable versions, and auditable decisions.
+Medbay 2.2.0 is a synthetic Stage 1 prototype for source-linked cardiology visit preparation. It validates the safety-critical path before any clinic pilot: born-digital PDF boundaries, page-level evidence, strict brief schemas, deterministic citation checks, clinician-only review, immutable versions, and auditable decisions.
 
 The reference clinic is fictional: **Northstar Clinic**.
 
@@ -87,7 +87,7 @@ Staff upload born-digital PDFs
 
 Business logic lives under `src/features/intake`. Route handlers stay thin, adapters isolate persistence and provider integrations, and the domain layer owns deterministic workflow and policy decisions.
 
-The Stage 1 brief path lives under `src/features/briefs`. Its PDF boundary validates file type/size/magic bytes and hashes documents/pages after the `unpdf` extractor returns page text. Drafting is deterministic and source-bounded: every generated fact quotes the sentence it was derived from, so provenance holds by construction and is still verified independently before approval. An AI draft provider is intentionally not connected in 2.0.1; that is Stage 2.
+The Stage 1 brief path lives under `src/features/briefs`. Its PDF boundary validates file type/size/magic bytes and hashes documents/pages after the `unpdf` extractor returns page text. Drafting is deterministic and source-bounded: every generated fact quotes the sentence it was derived from, so provenance holds by construction and is still verified independently before approval. An AI draft provider is intentionally not connected; that is Stage 2. The brief schema version stays at `2.0.1` — it is a data contract and does not track the release version.
 
 Key files:
 
@@ -286,6 +286,7 @@ For a production clinic deployment checklist, see `docs/production-readiness.md`
 ## Documentation
 
 - `docs/pivot-prd.md` - Medbay 2.x product direction, success gates, implementation truth, and delivery stages.
+- `docs/supabase-validation-runbook.md` - applying the migrations to a managed Supabase project and closing the storage-policy and JWT auth gaps.
 - `docs/product-spec.md` - product goals and acceptance criteria.
 - `docs/architecture.md` - runtime and feature boundaries.
 - `docs/domain-model.md` - product entities and workflow concepts.

@@ -8,6 +8,7 @@ import {
 } from "@/features/intake/domain/policy-engine";
 import type { IntakeCase, IntakeFields, IntakeCaseStatus } from "@/features/intake/domain/types";
 import type { IntakeUseCaseDependencies } from "@/features/intake/application/ports";
+import { logger } from "@/lib/observability";
 import {
   buildAiInput,
   buildKnowledgeContextFromItems,
@@ -172,7 +173,7 @@ export async function handlePatientMessage(
         reply = outputPolicy.safeResponseHint;
       }
     } catch (error) {
-      console.error("ai_provider_error", error);
+      logger.error("ai_provider_error", error, { caseId: intakeCase.id });
       reply = fallbackAdministrativeReply(policy, mergedFields);
     }
   }
@@ -265,7 +266,7 @@ export async function handlePatientMessage(
         metadata: { handoffRequired: policy.handoffRequired },
       });
     } catch (error) {
-      console.error("notification_provider_error", error);
+      logger.error("notification_provider_error", error, { caseId: updatedCase.id });
     }
   }
 
@@ -289,7 +290,7 @@ export async function handlePatientMessage(
           persisted: true,
         };
       } catch (error) {
-        console.error("calendar_provider_error", error);
+        logger.error("calendar_provider_error", error, { caseId: updatedCase.id });
         appointmentMetadata = {
           ...appointmentMetadata,
           providerError: error instanceof Error ? error.message : "Calendar provider failed.",

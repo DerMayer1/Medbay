@@ -1,7 +1,8 @@
 # Medbay 2.x Pivot PRD
 
 **Status:** Active product direction  
-**Current release:** 2.0.1 — synthetic Stage 1 foundation  
+**Current release:** 2.2.0 — Phase 0 deployment hardening  
+**Brief schema version:** 2.0.1 (data contract; does not track the release version)  
 **Last updated:** 2026-07-29  
 **Reference clinic:** Northstar Clinic (fictional)
 
@@ -116,7 +117,7 @@ Create case
   -> print/export approved version
 ```
 
-The 2.0.1 interactive demo currently begins after extraction using embedded fictional page text. The PDF boundary and extractor contract exist, but the production upload and extraction path is not connected yet.
+As of 2.2.0 the upload, extraction and generation path is connected end to end. Staff upload born-digital PDFs, `unpdf` extracts the page text, and a deterministic draft is generated and persisted for review. The interactive demo still ships with embedded fictional pages so a visitor sees a populated case without uploading anything.
 
 ## 8. Functional Requirements
 
@@ -223,7 +224,7 @@ The baseline, sample size, specialty-specific relevance, and measurement method 
 
 ## 12. Current Implementation Truth
 
-### Implemented in 2.0.1
+### Implemented in the 2.x line
 
 - strict source, page, fact, citation, brief, and review schemas
 - deterministic quote-to-page provenance validation
@@ -288,9 +289,25 @@ Deferred capabilities should be introduced only when the preceding stage has evi
 
 Establish strict contracts, deterministic provenance, clinician-only final review, immutability, auditability, synthetic fixtures, and the database design.
 
-### Stage 1B — complete synthetic vertical slice
+### Stage 1B — complete synthetic vertical slice (2.1.0)
 
 Connect the upload screen, a concrete born-digital PDF parser, storage orchestration, persisted version creation, deterministic generation fixtures, and export. Apply the migration in a disposable Supabase environment and test RLS, transactions, and failure recovery end to end.
+
+Delivered, except that the migrations were exercised against an in-process PostgreSQL instance rather than a managed Supabase project. See Phase 0.
+
+### Phase 0 — deployment hardening (2.2.0)
+
+Make the existing stack safe to run outside demo mode, as the prerequisite for every commercial phase that follows.
+
+| Item | Status |
+| --- | --- |
+| Stage 1 vertical slice merged to `main` | Done |
+| Production dependency tree free of known high-severity advisories, gated in CI | Done |
+| Credential-less admin refused whenever a service-role credential is present | Done |
+| Structured JSON logging and a vendor-neutral error reporting seam | Done |
+| Migrations applied to a managed Supabase project; storage policies and JWT `auth.uid()` verified | **Open** — see `docs/supabase-validation-runbook.md` |
+
+Phase 0 is complete only when the runbook has been executed and its outcome recorded in §12.
 
 ### Stage 2 — supervised AI evaluation
 

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { AI_ERROR_REPLY } from "@/lib/constants";
 import { createDegradedChatReply } from "@/lib/degradedChat";
+import { logger } from "@/lib/observability";
 import { enforceRateLimit, noStoreJson, rejectCrossOriginMutation } from "@/lib/security";
 import { chatPayloadSchema } from "@/lib/validators";
 import { handlePatientMessage } from "@/features/intake/application/handle-patient-message";
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("chat_error", error);
+    logger.error("chat_error", error, { route: "/api/chat", degraded: Boolean(payload) });
 
     if (payload) {
       const degraded = createDegradedChatReply(payload.message, payload.history);
