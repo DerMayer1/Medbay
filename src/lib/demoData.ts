@@ -1,4 +1,33 @@
+import { computeBriefContentSha256, type BriefContent } from "@/features/briefs/domain/brief-content-hash";
+
 const now = "2026-07-03T12:00:00.000Z";
+
+const northstarBriefContent: BriefContent = {
+  purpose: "Prepare the cardiologist with source-linked context. This brief does not diagnose, score risk, or recommend treatment.",
+  facts: [
+    {
+      id: "10000000-0000-4000-8000-000000000001",
+      section: "reason_for_visit",
+      label: "Reason for visit",
+      value: "Cardiology follow-up for recurring palpitations.",
+      citations: [{ documentId: "20000000-0000-4000-8000-000000000001", pageNumber: 1, quote: "Recurring palpitations; cardiology follow-up requested." }],
+    },
+    {
+      id: "10000000-0000-4000-8000-000000000002",
+      section: "medications",
+      label: "Patient-reported medication",
+      value: "Propranolol 10 mg as needed.",
+      citations: [{ documentId: "20000000-0000-4000-8000-000000000002", pageNumber: 1, quote: "Propranolol 10 mg as needed." }],
+    },
+    {
+      id: "10000000-0000-4000-8000-000000000003",
+      section: "prior_results",
+      label: "Prior result referenced",
+      value: "Referral notes a previous ECG; the report itself is not attached.",
+      citations: [{ documentId: "20000000-0000-4000-8000-000000000001", pageNumber: 1, quote: "Previous ECG referenced; report not attached." }],
+    },
+  ],
+};
 
 export async function withDemoFallback<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
   let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -43,31 +72,8 @@ export const demoLeads = [
       status: "needs_review" as const,
       generatedAt: now,
       generatedBy: "synthetic_stage_1" as const,
-      contentSha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      purpose: "Prepare the cardiologist with source-linked context. This brief does not diagnose, score risk, or recommend treatment.",
-      facts: [
-        {
-          id: "10000000-0000-4000-8000-000000000001",
-          section: "reason_for_visit" as const,
-          label: "Reason for visit",
-          value: "Cardiology follow-up for recurring palpitations.",
-          citations: [{ documentId: "20000000-0000-4000-8000-000000000001", pageNumber: 1, quote: "Recurring palpitations; cardiology follow-up requested." }],
-        },
-        {
-          id: "10000000-0000-4000-8000-000000000002",
-          section: "medications" as const,
-          label: "Patient-reported medication",
-          value: "Propranolol 10 mg as needed.",
-          citations: [{ documentId: "20000000-0000-4000-8000-000000000002", pageNumber: 1, quote: "Propranolol 10 mg as needed." }],
-        },
-        {
-          id: "10000000-0000-4000-8000-000000000003",
-          section: "prior_results" as const,
-          label: "Prior result referenced",
-          value: "Referral notes a previous ECG; the report itself is not attached.",
-          citations: [{ documentId: "20000000-0000-4000-8000-000000000001", pageNumber: 1, quote: "Previous ECG referenced; report not attached." }],
-        },
-      ],
+      contentSha256: computeBriefContentSha256(northstarBriefContent),
+      ...northstarBriefContent,
       sources: [
         {
           documentId: "20000000-0000-4000-8000-000000000001",

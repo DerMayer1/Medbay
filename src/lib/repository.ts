@@ -1,3 +1,5 @@
+import type { Stage1BriefStore } from "@/features/briefs/application/stage-1-pipeline";
+import { assertBriefCanBeApproved, type BriefSource } from "@/features/briefs/domain/pre-consultation-brief";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getServerSupabase } from "@/lib/supabaseServer";
 import type { ChatMessage, KnowledgeItem, Lead } from "@/types/lead";
@@ -10,6 +12,73 @@ function requireSupabaseAdmin() {
     throw new Error("Supabase service role is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
   }
   return supabase;
+}
+
+type SourcePageRow = { page_number: number; page_text: string; text_sha256: string };
+type SourceDocumentRow = {
+  id: string;
+  file_name: string;
+  mime_type: string;
+  byte_size: number;
+  document_sha256: string;
+  source_pages?: SourcePageRow[] | null;
+};
+type BriefReviewDecisionRow = {
+  reviewer_id: string;
+  decision: string;
+  reason: string;
+  created_at: string;
+  profiles?: { name?: string | null } | null;
+};
+type BriefVersionRow = {
+  id: string;
+  case_id: string;
+  schema_version: string;
+  version_number: number;
+  specialty: string;
+  consultation_type: string;
+  status: string;
+  created_at: string;
+  generated_by: string;
+  content_sha256: string;
+  content?: unknown;
+  brief_review_decisions?: BriefReviewDecisionRow[] | null;
+};
+
+/**
+ * Rebuilds the brief exactly as a reviewer sees it: narrative content from the
+ * `content` payload, provenance from the stored source documents and pages.
+ */
+function mapBriefVersionRow(briefVersion: BriefVersionRow | null | undefined, sourceDocuments: SourceDocumentRow[] | null | undefined) {
+  if (!briefVersion) return null;
+  const review = Array.isArray(briefVersion.brief_review_decisions) ? briefVersion.brief_review_decisions[0] : undefined;
+  const content = briefVersion.content && typeof briefVersion.content === "object" ? briefVersion.content as Record<string, unknown> : {};
+  return {
+    schemaVersion: briefVersion.schema_version,
+    versionId: briefVersion.id,
+    versionNumber: briefVersion.version_number,
+    caseId: briefVersion.case_id,
+    specialty: briefVersion.specialty,
+    consultationType: briefVersion.consultation_type,
+    status: briefVersion.status,
+    generatedAt: briefVersion.created_at,
+    generatedBy: briefVersion.generated_by,
+    contentSha256: briefVersion.content_sha256,
+    purpose: content.purpose,
+    facts: content.facts,
+    sources: (sourceDocuments || []).map((document) => ({
+      documentId: document.id,
+      fileName: document.file_name,
+      mimeType: document.mime_type,
+      byteSize: document.byte_size,
+      documentSha256: document.document_sha256,
+      pages: (document.source_pages || [])
+        .slice()
+        .sort((left, right) => left.page_number - right.page_number)
+        .map((page) => ({ pageNumber: page.page_number, text: page.page_text, textSha256: page.text_sha256 })),
+    })),
+    review: review ? { reviewerId: review.reviewer_id, reviewerName: review.profiles?.name || "Clinician", decision: review.decision, reason: review.reason, reviewedAt: review.created_at } : undefined,
+  };
 }
 
 export async function getActiveKnowledge() {
@@ -238,31 +307,7 @@ export async function getLeadBundle(id: string) {
     : { data: [], error: null };
   if (sourceError) throw sourceError;
 
-  const review = Array.isArray(briefVersion?.brief_review_decisions) ? briefVersion.brief_review_decisions[0] : undefined;
-  const content = briefVersion?.content && typeof briefVersion.content === "object" ? briefVersion.content as Record<string, unknown> : {};
-  const preConsultationBrief = briefVersion ? {
-    schemaVersion: briefVersion.schema_version,
-    versionId: briefVersion.id,
-    versionNumber: briefVersion.version_number,
-    caseId: briefVersion.case_id,
-    specialty: briefVersion.specialty,
-    consultationType: briefVersion.consultation_type,
-    status: briefVersion.status,
-    generatedAt: briefVersion.created_at,
-    generatedBy: briefVersion.generated_by,
-    contentSha256: briefVersion.content_sha256,
-    purpose: content.purpose,
-    facts: content.facts,
-    sources: (sourceDocuments || []).map((document) => ({
-      documentId: document.id,
-      fileName: document.file_name,
-      mimeType: document.mime_type,
-      byteSize: document.byte_size,
-      documentSha256: document.document_sha256,
-      pages: (document.source_pages || []).sort((a: { page_number: number }, b: { page_number: number }) => a.page_number - b.page_number).map((page: { page_number: number; page_text: string; text_sha256: string }) => ({ pageNumber: page.page_number, text: page.page_text, textSha256: page.text_sha256 })),
-    })),
-    review: review ? { reviewerId: review.reviewer_id, reviewerName: review.profiles?.name || "Clinician", decision: review.decision, reason: review.reason, reviewedAt: review.created_at } : undefined,
-  } : null;
+  const preConsultationBrief = mapBriefVersionRow(briefVersion, sourceDocuments);
 
   return { lead: { ...lead, pre_consultation_brief: preConsultationBrief, brief_review_status: briefVersion?.status }, conversation, messages, appointments, auditEvents };
 }
@@ -323,6 +368,29 @@ export async function writeAuditLog(input: {
   if (error) throw error;
 }
 
+type AuthenticatedSupabase = NonNullable<Awaited<ReturnType<typeof getServerSupabase>>>;
+
+async function assertStoredBriefIsApprovable(supabase: AuthenticatedSupabase, caseId: string, versionId: string) {
+  const { data: briefVersion, error: briefError } = await supabase
+    .from("brief_versions")
+    .select("*")
+    .eq("clinic_id", clinicId)
+    .eq("case_id", caseId)
+    .eq("id", versionId)
+    .maybeSingle();
+  if (briefError) throw briefError;
+  if (!briefVersion) throw new Error("Brief version not found for this case.");
+
+  const { data: sourceDocuments, error: sourceError } = await supabase
+    .from("source_documents")
+    .select("*, source_pages(*)")
+    .eq("clinic_id", clinicId)
+    .eq("case_id", caseId);
+  if (sourceError) throw sourceError;
+
+  assertBriefCanBeApproved(mapBriefVersionRow(briefVersion, sourceDocuments));
+}
+
 export async function reviewBriefVersion(input: {
   caseId: string;
   versionId: string;
@@ -332,6 +400,13 @@ export async function reviewBriefVersion(input: {
 }) {
   const supabase = await getServerSupabase();
   if (!supabase) throw new Error("Authenticated Supabase client is not configured.");
+
+  // Provenance is re-verified here so an approval can never finalize a version
+  // whose citations do not resolve to the pages actually stored for the case.
+  // The RPC re-checks the expected content hash inside its transaction, so a
+  // version cannot change between this check and the decision.
+  if (input.decision === "approved") await assertStoredBriefIsApprovable(supabase, input.caseId, input.versionId);
+
   const { data, error } = await supabase.rpc("review_brief_version", {
     p_case_id: input.caseId,
     p_version_id: input.versionId,
@@ -342,3 +417,116 @@ export async function reviewBriefVersion(input: {
   if (error) throw error;
   return data;
 }
+
+const STAGE_1_BUCKET = "clinical-source-pdfs";
+
+async function requireAuthenticatedActor() {
+  const supabase = await getServerSupabase();
+  if (!supabase) throw new Error("Authenticated Supabase client is not configured.");
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) throw new Error("An authenticated session is required.");
+  return { supabase, userId: data.user.id };
+}
+
+function toBriefSource(document: SourceDocumentRow): BriefSource {
+  return {
+    documentId: document.id,
+    fileName: document.file_name,
+    mimeType: "application/pdf",
+    byteSize: document.byte_size,
+    documentSha256: document.document_sha256,
+    pages: (document.source_pages || [])
+      .slice()
+      .sort((left, right) => left.page_number - right.page_number)
+      .map((page) => ({ pageNumber: page.page_number, text: page.page_text, textSha256: page.text_sha256 })),
+  };
+}
+
+/**
+ * Supabase-backed Stage 1 persistence. Source bytes go to the private bucket
+ * under a clinic-prefixed path so the storage policies apply, and the brief
+ * digest is read back from the database, which derives it on insert.
+ */
+export const supabaseStage1Store: Stage1BriefStore = {
+  async listSources(caseId) {
+    const { supabase } = await requireAuthenticatedActor();
+    const { data, error } = await supabase
+      .from("source_documents")
+      .select("*, source_pages(*)")
+      .eq("clinic_id", clinicId)
+      .eq("case_id", caseId)
+      .order("created_at");
+    if (error) throw error;
+    return (data || []).map(toBriefSource);
+  },
+
+  async saveSource(caseId, source, bytes) {
+    // The RPC derives the clinic and the creator from the caller's identity.
+    const { supabase } = await requireAuthenticatedActor();
+    const storagePath = `${clinicId}/${caseId}/${source.documentId}.pdf`;
+
+    const upload = await supabase.storage.from(STAGE_1_BUCKET).upload(storagePath, bytes, {
+      contentType: "application/pdf",
+      upsert: false,
+    });
+    if (upload.error) throw upload.error;
+
+    // The document and its pages are written in one transaction: a document row
+    // cannot be deleted afterwards, so a partial write is unrecoverable.
+    const { error } = await supabase.rpc("attach_source_document", {
+      p_case_id: caseId,
+      p_document_id: source.documentId,
+      p_file_name: source.fileName,
+      p_byte_size: source.byteSize,
+      p_document_sha256: source.documentSha256,
+      p_storage_path: storagePath,
+      p_pages: source.pages.map((page) => ({ pageNumber: page.pageNumber, text: page.text, textSha256: page.textSha256 })),
+    });
+
+    if (error) {
+      // Leave no orphaned object behind when the transaction is rejected.
+      await supabase.storage.from(STAGE_1_BUCKET).remove([storagePath]);
+      throw error;
+    }
+  },
+
+  async nextVersionNumber(caseId) {
+    const { supabase } = await requireAuthenticatedActor();
+    const { data, error } = await supabase
+      .from("brief_versions")
+      .select("version_number")
+      .eq("clinic_id", clinicId)
+      .eq("case_id", caseId)
+      .order("version_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return (data?.version_number ?? 0) + 1;
+  },
+
+  async saveBriefVersion(caseId, brief) {
+    const { supabase, userId } = await requireAuthenticatedActor();
+    const { data, error } = await supabase
+      .from("brief_versions")
+      .insert({
+        id: brief.versionId,
+        clinic_id: clinicId,
+        case_id: caseId,
+        version_number: brief.versionNumber,
+        schema_version: brief.schemaVersion,
+        specialty: brief.specialty,
+        consultation_type: brief.consultationType,
+        status: "needs_review",
+        content: { purpose: brief.purpose, facts: brief.facts },
+        generated_by: brief.generatedBy,
+        created_by: userId,
+      })
+      .select("*")
+      .single();
+    if (error) throw error;
+
+    // The database derives content_sha256, so the reviewer submits the digest
+    // the database will compare against.
+    return { ...brief, generatedAt: data.created_at, contentSha256: data.content_sha256 };
+  },
+};

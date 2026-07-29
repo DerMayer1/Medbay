@@ -1,6 +1,12 @@
 import { demoAppointments, demoConversations, demoKnowledge, demoLeads } from "@/lib/demoData";
 import type { KnowledgeItem, Lead } from "@/types/lead";
-import { assertBriefCanBeApproved, isPreConsultationBrief } from "@/features/briefs/domain/pre-consultation-brief";
+import {
+  assertBriefCanBeApproved,
+  isPreConsultationBrief,
+  type BriefSource,
+  type PreConsultationBrief,
+} from "@/features/briefs/domain/pre-consultation-brief";
+import type { Stage1BriefStore } from "@/features/briefs/application/stage-1-pipeline";
 
 type DemoAppointment = (typeof demoAppointments)[number];
 type DemoConversation = (typeof demoConversations)[number];
@@ -20,6 +26,7 @@ type DemoStore = {
   appointments: DemoAppointment[];
   knowledge: KnowledgeItem[];
   auditEvents: DemoAuditEvent[];
+  briefSources?: Record<string, BriefSource[]>;
 };
 
 const globalForDemo = globalThis as typeof globalThis & { __medbayDemoStore?: DemoStore };
@@ -297,4 +304,69 @@ export function reviewDemoBriefVersion(input: {
     metadata: { caseId: input.caseId, contentSha256: input.expectedContentSha256, reason: input.reason }, created_at: reviewedAt,
   });
   return clone(reviewed);
+}
+
+function getBriefSources(caseId: string): BriefSource[] {
+  const store = getStore();
+  if (!store.briefSources) store.briefSources = {};
+  if (!store.briefSources[caseId]) {
+    // Seed from the brief the case was shipped with so a regenerated version
+    // still carries the documents the demo already displays.
+    const existing = store.leads.find((lead) => lead.id === caseId)?.pre_consultation_brief;
+    store.briefSources[caseId] = isPreConsultationBrief(existing) ? clone(existing.sources) : [];
+  }
+  return store.briefSources[caseId];
+}
+
+/**
+ * Synthetic Stage 1 persistence. Uploaded bytes are intentionally discarded:
+ * demo mode never touches storage, and only the extracted page text is needed
+ * to exercise drafting and provenance.
+ */
+export const demoStage1Store: Stage1BriefStore = {
+  async listSources(caseId) {
+    return clone(getBriefSources(caseId));
+  },
+
+  async saveSource(caseId, source) {
+    getBriefSources(caseId).push(clone(source));
+    getStore().auditEvents.push({
+      id: crypto.randomUUID(), actor: "Demo staff", action: "source_document_attached", entity_type: "source_document",
+      entity_id: source.documentId, metadata: { caseId, fileName: source.fileName, pages: source.pages.length }, created_at: timestamp(),
+    });
+  },
+
+  async nextVersionNumber(caseId) {
+    const existing = getStore().leads.find((lead) => lead.id === caseId)?.pre_consultation_brief;
+    return isPreConsultationBrief(existing) ? existing.versionNumber + 1 : 1;
+  },
+
+  async saveBriefVersion(caseId, brief) {
+    const store = getStore();
+    const index = store.leads.findIndex((lead) => lead.id === caseId);
+    if (index < 0) throw new Error("Synthetic case was not found.");
+    const generatedAt = timestamp();
+    store.leads[index] = {
+      ...store.leads[index],
+      pre_consultation_brief: clone(brief),
+      brief_review_status: "needs_review",
+      brief_reviewed_by: undefined,
+      brief_reviewed_at: undefined,
+      updated_at: generatedAt,
+    };
+    store.auditEvents.push({
+      id: crypto.randomUUID(), actor: "Medbay Stage 1", action: "brief_version_generated", entity_type: "brief_version",
+      entity_id: brief.versionId, metadata: { caseId, versionNumber: brief.versionNumber, facts: brief.facts.length }, created_at: generatedAt,
+    });
+    return clone(brief);
+  },
+};
+
+export function listDemoBriefSources(caseId: string): BriefSource[] {
+  return clone(getBriefSources(caseId));
+}
+
+export function getDemoBriefVersion(caseId: string): PreConsultationBrief | null {
+  const existing = getStore().leads.find((lead) => lead.id === caseId)?.pre_consultation_brief;
+  return isPreConsultationBrief(existing) ? clone(existing) : null;
 }

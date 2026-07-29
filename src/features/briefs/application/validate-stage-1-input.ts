@@ -7,13 +7,25 @@ export const STAGE_1_MAX_DOCUMENTS = 5;
 export type ExtractedPdfPage = { pageNumber: number; text: string };
 export type BornDigitalPdfExtractor = (bytes: Uint8Array) => Promise<ExtractedPdfPage[]>;
 
+/**
+ * Stage 1 caps a case at five source documents. The database enforces the same
+ * budget on insert; this keeps the rejection at the upload boundary.
+ */
+export function assertStage1DocumentBudget(existingDocumentCount: number) {
+  if (existingDocumentCount >= STAGE_1_MAX_DOCUMENTS) {
+    throw new Error(`A Stage 1 case accepts at most ${STAGE_1_MAX_DOCUMENTS} source documents.`);
+  }
+}
+
 export async function validateAndExtractBornDigitalPdf(input: {
   documentId: string;
   fileName: string;
   mimeType: string;
   bytes: Uint8Array;
   extract: BornDigitalPdfExtractor;
+  existingDocumentCount?: number;
 }): Promise<BriefSource> {
+  assertStage1DocumentBudget(input.existingDocumentCount ?? 0);
   if (input.mimeType !== "application/pdf") throw new Error("Stage 1 accepts PDF files only.");
   if (input.bytes.byteLength === 0 || input.bytes.byteLength > STAGE_1_MAX_PDF_BYTES) throw new Error("PDF must be between 1 byte and 6 MB.");
   if (new TextDecoder("ascii").decode(input.bytes.slice(0, 5)) !== "%PDF-") throw new Error("The uploaded bytes are not a PDF.");

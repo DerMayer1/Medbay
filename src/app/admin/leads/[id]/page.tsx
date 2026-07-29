@@ -17,6 +17,7 @@ import { CaseStatusControls } from "@/components/admin/CaseStatusControls";
 import { ConversationViewer } from "@/components/admin/ConversationViewer";
 import { InternalNotesEditor } from "@/components/admin/InternalNotesEditor";
 import { PreConsultationBriefReview } from "@/components/admin/PreConsultationBriefReview";
+import { SourceDocumentUploader } from "@/components/admin/SourceDocumentUploader";
 import { isPreConsultationBrief } from "@/features/briefs/domain/pre-consultation-brief";
 import { evaluateIntakeCompleteness } from "@/features/intake/domain/intake-completeness";
 import type { AuditEvent, IntakeCase, IntakeCaseStatus } from "@/features/intake/domain/types";
@@ -92,6 +93,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         <section className="space-y-6">
           <CaseDecisionPanel intakeCase={intakeCase} auditEvents={auditEvents} riskFlags={riskFlags} />
           <CaseTimeline intakeCase={intakeCase} auditEvents={auditEvents} />
+
+          <SourceDocumentUploader caseId={intakeCase.id} hasBrief={Boolean(preConsultationBrief)} />
 
           {preConsultationBrief ? (
             <PreConsultationBriefReview caseId={intakeCase.id} brief={preConsultationBrief} />

@@ -71,9 +71,23 @@ create table if not exists brief_versions (
   foreign key (case_id, clinic_id) references leads(id, clinic_id) on delete cascade
 );
 
+-- The database is the authority for the reviewed content digest. A CHECK
+-- comparing a client-supplied hash against digest(content::text) would require
+-- the application to reproduce PostgreSQL's canonical jsonb rendering byte for
+-- byte, so the hash is derived here instead and read back by the application.
 alter table brief_versions drop constraint if exists brief_versions_content_hash_check;
-alter table brief_versions add constraint brief_versions_content_hash_check
-check (content_sha256 = encode(digest(content::text, 'sha256'), 'hex'));
+
+create or replace function set_brief_version_content_hash()
+returns trigger language plpgsql as $$
+begin
+  new.content_sha256 := encode(digest(new.content::text, 'sha256'), 'hex');
+  return new;
+end;
+$$;
+
+drop trigger if exists set_brief_version_content_hash_trigger on brief_versions;
+create trigger set_brief_version_content_hash_trigger before insert on brief_versions
+for each row execute function set_brief_version_content_hash();
 
 create table if not exists brief_review_decisions (
   id uuid primary key default gen_random_uuid(),
@@ -137,6 +151,25 @@ for each row execute function prevent_clinical_artifact_mutation();
 drop trigger if exists brief_decisions_immutable on brief_review_decisions;
 create trigger brief_decisions_immutable before update or delete on brief_review_decisions
 for each row execute function prevent_clinical_artifact_mutation();
+-- brief_versions accepts the needs_review -> approved/rejected update above,
+-- but a version itself is never removable.
+drop trigger if exists brief_versions_no_delete on brief_versions;
+create trigger brief_versions_no_delete before delete on brief_versions
+for each row execute function prevent_clinical_artifact_mutation();
+
+create or replace function enforce_stage_1_document_budget()
+returns trigger language plpgsql as $$
+begin
+  if (select count(*) from source_documents where case_id = new.case_id) >= 5 then
+    raise exception 'Stage 1 accepts at most five source documents per case';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists source_documents_stage_1_budget on source_documents;
+create trigger source_documents_stage_1_budget before insert on source_documents
+for each row execute function enforce_stage_1_document_budget();
 
 alter table clinics enable row level security;
 alter table source_documents enable row level security;
@@ -196,6 +229,48 @@ with check (
   and actor = auth.uid()::text
   and exists (select 1 from profiles where id = auth.uid() and role = 'clinician')
 );
+
+-- A document and its pages must be written together. A document row cannot be
+-- deleted once written, so a half-attached document with no pages would poison
+-- the case permanently: every later brief generation would fail on a source
+-- carrying zero pages.
+create or replace function attach_source_document(
+  p_case_id uuid,
+  p_document_id uuid,
+  p_file_name text,
+  p_byte_size integer,
+  p_document_sha256 text,
+  p_storage_path text,
+  p_pages jsonb
+) returns jsonb
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_profile profiles%rowtype;
+  v_page jsonb;
+begin
+  select * into v_profile from profiles where id = auth.uid() and role in ('staff', 'clinician');
+  if not found then raise exception 'staff or clinician role required'; end if;
+  if p_pages is null or jsonb_typeof(p_pages) <> 'array' or jsonb_array_length(p_pages) < 1 then
+    raise exception 'a source document must carry at least one extracted page';
+  end if;
+
+  insert into source_documents (id, clinic_id, case_id, file_name, mime_type, byte_size, document_sha256, storage_path, created_by)
+  values (p_document_id, v_profile.clinic_id, p_case_id, p_file_name, 'application/pdf', p_byte_size, p_document_sha256, p_storage_path, auth.uid());
+
+  for v_page in select value from jsonb_array_elements(p_pages) loop
+    insert into source_pages (clinic_id, document_id, page_number, page_text, text_sha256)
+    values (v_profile.clinic_id, p_document_id, (v_page ->> 'pageNumber')::int, v_page ->> 'text', v_page ->> 'textSha256');
+  end loop;
+
+  return jsonb_build_object('documentId', p_document_id, 'pages', jsonb_array_length(p_pages));
+end;
+$$;
+
+revoke all on function attach_source_document(uuid, uuid, text, integer, text, text, jsonb) from public;
+grant execute on function attach_source_document(uuid, uuid, text, integer, text, text, jsonb) to authenticated;
 
 create or replace function review_brief_version(
   p_case_id uuid,
