@@ -289,7 +289,7 @@ Deferred capabilities should be introduced only when the preceding stage has evi
 
 Establish strict contracts, deterministic provenance, clinician-only final review, immutability, auditability, synthetic fixtures, and the database design.
 
-### Stage 1B — complete synthetic vertical slice (2.1.0)
+### Stage 1B — complete synthetic vertical slice (shipped under 2.0.1, PR #5)
 
 Connect the upload screen, a concrete born-digital PDF parser, storage orchestration, persisted version creation, deterministic generation fixtures, and export. Apply the migration in a disposable Supabase environment and test RLS, transactions, and failure recovery end to end.
 

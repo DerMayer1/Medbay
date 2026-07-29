@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { AI_ERROR_REPLY } from "@/lib/constants";
 import { createDegradedChatReply } from "@/lib/degradedChat";
-import { logger } from "@/lib/observability";
+import { logger, newRequestId } from "@/lib/observability";
 import { enforceRateLimit, noStoreJson, rejectCrossOriginMutation } from "@/lib/security";
 import { chatPayloadSchema } from "@/lib/validators";
 import { handlePatientMessage } from "@/features/intake/application/handle-patient-message";
@@ -10,6 +10,7 @@ import { createIntakeUseCaseDependencies } from "@/features/intake/infrastructur
 export async function POST(request: NextRequest) {
   let payload: ReturnType<typeof chatPayloadSchema.parse> | undefined;
   const visitorId = request.cookies.get("medbay_visitor_id")?.value || crypto.randomUUID();
+  const requestId = newRequestId();
 
   try {
     const originError = rejectCrossOriginMutation(request);
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    logger.error("chat_error", error, { route: "/api/chat", degraded: Boolean(payload) });
+    logger.error("chat_error", error, { requestId, route: "/api/chat", degraded: Boolean(payload) });
 
     if (payload) {
       const degraded = createDegradedChatReply(payload.message, payload.history);

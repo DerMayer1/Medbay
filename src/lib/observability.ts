@@ -26,6 +26,18 @@ export type ErrorReporter = (error: unknown, context: LogContext) => void;
 
 let reporter: ErrorReporter | undefined;
 
+const LEVEL_RANK: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
+
+/**
+ * Threshold below which lines are dropped. Without it, debug output would be
+ * emitted from production, which is both noisy and a disclosure risk.
+ */
+function threshold(): number {
+  const configured = process.env.LOG_LEVEL as LogLevel | undefined;
+  if (configured && configured in LEVEL_RANK) return LEVEL_RANK[configured];
+  return process.env.NODE_ENV === "production" ? LEVEL_RANK.info : LEVEL_RANK.debug;
+}
+
 /** Registers the process-wide error reporter. Intended for instrumentation. */
 export function setErrorReporter(next: ErrorReporter | undefined) {
   reporter = next;
@@ -45,11 +57,15 @@ function serializeError(error: unknown) {
 }
 
 function emit(level: LogLevel, event: string, context: LogContext = {}, error?: unknown) {
+  if (LEVEL_RANK[level] < threshold()) return;
+
+  // Context is spread first so a caller cannot overwrite the structural fields
+  // and corrupt the shape a log drain indexes on.
   const line = JSON.stringify({
+    ...context,
     level,
     event,
     timestamp: new Date().toISOString(),
-    ...context,
     ...(error === undefined ? {} : { error: serializeError(error) }),
   });
 
