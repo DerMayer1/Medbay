@@ -114,7 +114,11 @@ export type AuditEvent = {
     | "handoff_requested"
     | "appointment_requested"
     | "notification_sent"
-    | "assistant_message_sent";
+    | "assistant_message_sent"
+    | "brief_generated"
+    | "brief_review_requested"
+    | "brief_approved"
+    | "brief_rejected";
   entityType?: string;
   entityId?: string;
   metadata?: Record<string, unknown>;

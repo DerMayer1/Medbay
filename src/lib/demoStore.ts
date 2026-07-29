@@ -1,5 +1,6 @@
 import { demoAppointments, demoConversations, demoKnowledge, demoLeads } from "@/lib/demoData";
 import type { KnowledgeItem, Lead } from "@/types/lead";
+import { assertBriefCanBeApproved, isPreConsultationBrief } from "@/features/briefs/domain/pre-consultation-brief";
 
 type DemoAppointment = (typeof demoAppointments)[number];
 type DemoConversation = (typeof demoConversations)[number];
@@ -14,7 +15,7 @@ type DemoAuditEvent = {
 };
 
 type DemoStore = {
-  leads: Array<Lead & { notes?: string }>;
+  leads: Array<Lead & { notes?: string; pre_consultation_brief?: unknown }>;
   conversations: DemoConversation[];
   appointments: DemoAppointment[];
   knowledge: KnowledgeItem[];
@@ -36,7 +37,7 @@ function createInitialAuditEvents(leads: DemoStore["leads"]): DemoAuditEvent[] {
     const createdAt = String(lead.created_at || timestamp());
     const handoffRequired = Boolean(lead.handoff_required);
 
-    return [
+    const events: DemoAuditEvent[] = [
       {
         id: crypto.randomUUID(),
         actor: "system",
@@ -80,6 +81,20 @@ function createInitialAuditEvents(leads: DemoStore["leads"]): DemoAuditEvent[] {
         created_at: createdAt,
       },
     ];
+
+    if (lead.pre_consultation_brief) {
+      events.push({
+        id: crypto.randomUUID(),
+        actor: "system",
+        action: "brief_generated",
+        entity_type: "intake_case",
+        entity_id: lead.id,
+        metadata: { reviewStatus: lead.brief_review_status, provenanceRequired: true },
+        created_at: createdAt,
+      });
+    }
+
+    return events;
   });
 }
 
@@ -129,7 +144,9 @@ export function getDemoLeadBundle(id: string) {
   const lead = getLeadOrDefault(id);
   const conversation = getConversationForLead(lead.id);
   const leadAppointments = store.appointments.filter((appointment) => appointment.lead_id === lead.id);
-  const auditEvents = store.auditEvents.filter((event) => event.entity_id === lead.id);
+  const auditEvents = store.auditEvents.filter(
+    (event) => event.entity_id === lead.id || event.metadata.caseId === lead.id,
+  );
 
   return clone({
     lead,
@@ -219,7 +236,17 @@ export function updateDemoLeadRecord(id: string, input: Partial<Lead> & { notes?
       : conversation,
   );
 
-  const action = input.notes !== undefined ? "internal_note_updated" : input.status ? "status_changed" : "intake_case_updated";
+  const action = input.notes !== undefined
+    ? "internal_note_updated"
+    : input.brief_review_status === "approved"
+      ? "brief_approved"
+      : input.brief_review_status === "rejected"
+        ? "brief_rejected"
+        : input.brief_review_status === "needs_review"
+          ? "brief_review_requested"
+          : input.status
+            ? "status_changed"
+            : "intake_case_updated";
   store.auditEvents.push({
     id: crypto.randomUUID(),
     actor: "demo_user",
@@ -228,11 +255,46 @@ export function updateDemoLeadRecord(id: string, input: Partial<Lead> & { notes?
     entity_id: id,
     metadata: input.status
       ? { from: previous.status, to: input.status }
-      : input.notes !== undefined
-        ? { noteLength: input.notes.length }
-        : input,
+      : input.brief_review_status
+        ? { from: previous.brief_review_status || "draft", to: input.brief_review_status }
+        : input.notes !== undefined
+          ? { noteLength: input.notes.length }
+          : input,
     created_at: updated.updated_at,
   });
 
   return clone(updated);
+}
+
+export function reviewDemoBriefVersion(input: {
+  caseId: string;
+  versionId: string;
+  expectedContentSha256: string;
+  decision: "approved" | "rejected";
+  reason: string;
+  reviewer: { id: string; name: string };
+}) {
+  const store = getStore();
+  const index = store.leads.findIndex((lead) => lead.id === input.caseId);
+  if (index < 0) throw new Error("Synthetic case was not found.");
+  const current = store.leads[index];
+  if (!isPreConsultationBrief(current.pre_consultation_brief)) throw new Error("No valid brief version is available.");
+  const brief = current.pre_consultation_brief;
+  if (brief.versionId !== input.versionId) throw new Error("Brief version does not belong to this case.");
+  if (brief.contentSha256 !== input.expectedContentSha256) throw new Error("Brief content changed. Reload before reviewing.");
+  if (brief.status !== "needs_review") throw new Error("This brief version already has a final decision.");
+  if (input.decision === "approved") assertBriefCanBeApproved(brief);
+
+  const reviewedAt = timestamp();
+  const reviewed = {
+    ...brief,
+    status: input.decision,
+    review: { reviewerId: input.reviewer.id, reviewerName: input.reviewer.name, decision: input.decision, reason: input.reason, reviewedAt },
+  };
+  store.leads[index] = { ...current, brief_review_status: input.decision, pre_consultation_brief: reviewed, brief_reviewed_by: input.reviewer.id, brief_reviewed_at: reviewedAt, updated_at: reviewedAt };
+  store.auditEvents.push({
+    id: crypto.randomUUID(), actor: input.reviewer.name, action: `brief_${input.decision}`, entity_type: "brief_version", entity_id: input.versionId,
+    metadata: { caseId: input.caseId, contentSha256: input.expectedContentSha256, reason: input.reason }, created_at: reviewedAt,
+  });
+  return clone(reviewed);
 }

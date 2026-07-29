@@ -1,5 +1,8 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getServerSupabase } from "@/lib/supabaseServer";
 import type { ChatMessage, KnowledgeItem, Lead } from "@/types/lead";
+
+const clinicId = process.env.MEDBAY_CLINIC_ID || "00000000-0000-4000-8000-000000000001";
 
 function requireSupabaseAdmin() {
   const supabase = getSupabaseAdmin();
@@ -106,6 +109,7 @@ export async function upsertLeadForConversation(conversationId: string, lead: Pa
   const consultationType = lead.consultationType || lead.consultation_type;
 
   const dbLead = {
+    clinic_id: clinicId,
     name: lead.name,
     email: lead.email,
     phone: lead.phone,
@@ -182,14 +186,14 @@ export async function updateConversationStatus(
 
 export async function listLeads() {
   const supabase = requireSupabaseAdmin();
-  const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("leads").select("*").eq("clinic_id", clinicId).order("created_at", { ascending: false });
   if (error) throw error;
   return data;
 }
 
 export async function getLeadBundle(id: string) {
   const supabase = requireSupabaseAdmin();
-  const { data: lead, error } = await supabase.from("leads").select("*").eq("id", id).single();
+  const { data: lead, error } = await supabase.from("leads").select("*").eq("clinic_id", clinicId).eq("id", id).single();
   if (error) throw error;
 
   const { data: conversation, error: conversationError } = await supabase
@@ -214,11 +218,53 @@ export async function getLeadBundle(id: string) {
   const { data: auditEvents, error: auditError } = await supabase
     .from("audit_logs")
     .select("*")
-    .eq("entity_id", id)
+    .eq("clinic_id", clinicId)
+    .or(`entity_id.eq.${id},metadata->>caseId.eq.${id}`)
     .order("created_at");
   if (auditError) throw auditError;
 
-  return { lead, conversation, messages, appointments, auditEvents };
+  const { data: briefVersion, error: briefError } = await supabase
+    .from("brief_versions")
+    .select("*, brief_review_decisions(*, profiles!brief_review_decisions_reviewer_id_fkey(name))")
+    .eq("clinic_id", clinicId)
+    .eq("case_id", id)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (briefError) throw briefError;
+
+  const { data: sourceDocuments, error: sourceError } = briefVersion
+    ? await supabase.from("source_documents").select("*, source_pages(*)").eq("clinic_id", clinicId).eq("case_id", id)
+    : { data: [], error: null };
+  if (sourceError) throw sourceError;
+
+  const review = Array.isArray(briefVersion?.brief_review_decisions) ? briefVersion.brief_review_decisions[0] : undefined;
+  const content = briefVersion?.content && typeof briefVersion.content === "object" ? briefVersion.content as Record<string, unknown> : {};
+  const preConsultationBrief = briefVersion ? {
+    schemaVersion: briefVersion.schema_version,
+    versionId: briefVersion.id,
+    versionNumber: briefVersion.version_number,
+    caseId: briefVersion.case_id,
+    specialty: briefVersion.specialty,
+    consultationType: briefVersion.consultation_type,
+    status: briefVersion.status,
+    generatedAt: briefVersion.created_at,
+    generatedBy: briefVersion.generated_by,
+    contentSha256: briefVersion.content_sha256,
+    purpose: content.purpose,
+    facts: content.facts,
+    sources: (sourceDocuments || []).map((document) => ({
+      documentId: document.id,
+      fileName: document.file_name,
+      mimeType: document.mime_type,
+      byteSize: document.byte_size,
+      documentSha256: document.document_sha256,
+      pages: (document.source_pages || []).sort((a: { page_number: number }, b: { page_number: number }) => a.page_number - b.page_number).map((page: { page_number: number; page_text: string; text_sha256: string }) => ({ pageNumber: page.page_number, text: page.page_text, textSha256: page.text_sha256 })),
+    })),
+    review: review ? { reviewerId: review.reviewer_id, reviewerName: review.profiles?.name || "Clinician", decision: review.decision, reason: review.reason, reviewedAt: review.created_at } : undefined,
+  } : null;
+
+  return { lead: { ...lead, pre_consultation_brief: preConsultationBrief, brief_review_status: briefVersion?.status }, conversation, messages, appointments, auditEvents };
 }
 
 export async function updateLeadRecord(id: string, input: Partial<Lead> & { notes?: string }) {
@@ -267,6 +313,7 @@ export async function writeAuditLog(input: {
 }) {
   const supabase = requireSupabaseAdmin();
   const { error } = await supabase.from("audit_logs").insert({
+    clinic_id: clinicId,
     actor: input.actor || "system",
     action: input.action,
     entity_type: input.entityType,
@@ -274,4 +321,24 @@ export async function writeAuditLog(input: {
     metadata: input.metadata || {},
   });
   if (error) throw error;
+}
+
+export async function reviewBriefVersion(input: {
+  caseId: string;
+  versionId: string;
+  expectedContentSha256: string;
+  decision: "approved" | "rejected";
+  reason: string;
+}) {
+  const supabase = await getServerSupabase();
+  if (!supabase) throw new Error("Authenticated Supabase client is not configured.");
+  const { data, error } = await supabase.rpc("review_brief_version", {
+    p_case_id: input.caseId,
+    p_version_id: input.versionId,
+    p_expected_content_sha256: input.expectedContentSha256,
+    p_decision: input.decision,
+    p_reason: input.reason,
+  });
+  if (error) throw error;
+  return data;
 }

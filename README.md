@@ -5,7 +5,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6)](https://www.typescriptlang.org/)
 
-Medbay is an AI-assisted intake platform for clinics. It turns unstructured patient conversations into structured, auditable intake cases with deterministic safety policies, staff handoff workflows, appointment requests, knowledge-base context, and an operations console.
+Medbay 2.0.1 is a synthetic Stage 1 prototype for source-linked cardiology visit preparation. It validates the safety-critical path before any clinic pilot: born-digital PDF boundaries, page-level evidence, strict brief schemas, deterministic citation checks, clinician-only review, immutable versions, and auditable decisions.
 
 The reference clinic is fictional: **Northstar Clinic**.
 
@@ -21,27 +21,29 @@ Live demo: [medbay-helix.vercel.app](https://medbay-helix.vercel.app/)
 
 ![Staff operations console](docs/screenshots/admin-console.png)
 
-### Intake Case Review
+### Source-linked Visit Preparation Review
 
 ![Intake case review](docs/screenshots/case-review.png)
 
 ## Why It Exists
 
-Clinics receive high-volume inbound requests across forms, chat, phone, and messaging channels. The operational problem is not just answering quickly. Staff need structured cases that can be reviewed safely, prioritized, routed, scheduled, audited, and closed.
+Clinicians lose preparation time reconstructing context across intake forms, referrals, medication lists, and records. The operational problem is not generating another summary. Every displayed fact must remain traceable to an exact PDF page and quoted passage, and an identified clinician must approve the immutable version before export.
 
 Medbay is built around one boundary:
 
-- AI assists with administrative intake, scheduling support, knowledge-base answers, and handoff.
+- AI assists with administrative intake, source-bounded extraction, record organization, scheduling support, and handoff.
 - Deterministic policies decide when to block, escalate, or ask for clarification.
-- Staff review happens in an operations console centered on intake cases.
+- Staff prepare the case and an authorized reviewer explicitly approves or rejects the pre-consultation brief.
 
-Medbay does **not** diagnose, prescribe, interpret clinical results, or replace professional care.
+Medbay does **not** diagnose, calculate clinical risk, prescribe, recommend treatment, interpret clinical results, or replace professional care.
 
 ## Core Capabilities
 
 - Public intake assistant with conversational data collection.
 - Deterministic safety policy engine for clinical-risk boundaries.
 - Structured intake extraction and completeness scoring.
+- Strictly validated cardiology pre-consultation brief versions with exact page quotes.
+- Clinician-only approval or rejection with a required reason and optimistic hash check.
 - Intake case workflow with validated status transitions.
 - Human handoff for unsafe, urgent, or staff-requested cases.
 - Admin console for case queue, conversations, appointments, and knowledge base.
@@ -66,6 +68,8 @@ Public intake assistant
 ```
 
 Business logic lives under `src/features/intake`. Route handlers stay thin, adapters isolate persistence and provider integrations, and the domain layer owns deterministic workflow and policy decisions.
+
+The Stage 1 brief path lives under `src/features/briefs`. Its PDF boundary validates file type/size/magic bytes and hashes documents/pages after a supplied extractor returns text. A production PDF extraction adapter and AI draft provider are intentionally not connected in 2.0.1; the checked-in cohort uses synthetic extracted pages so the provenance and review contracts can be tested deterministically.
 
 Key files:
 
@@ -94,6 +98,8 @@ Core concepts:
 - `Appointment`
 - `KnowledgeBaseItem`
 - `AuditEvent`
+- `SourceDocument` / `SourcePage`
+- `BriefVersion` / `BriefReviewDecision`
 
 The Supabase schema keeps the original `leads` table for backwards compatibility, but application code and UI expose the product domain as **Intake Cases**.
 
@@ -156,6 +162,7 @@ Open `http://localhost:3000`.
 ```env
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NODE_ENV=development
+MEDBAY_CLINIC_ID=00000000-0000-4000-8000-000000000001
 
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o
@@ -196,7 +203,7 @@ npm test           # Run Vitest suite
 
 ## Production Notes
 
-Production-ready pieces:
+Implemented and testable in the synthetic Stage 1 scope:
 
 - typed domain modules
 - deterministic workflow validation
@@ -206,13 +213,20 @@ Production-ready pieces:
 - Supabase-compatible persistence
 - audit event model
 - rate limiting and same-origin mutation checks
-- Supabase Auth and admin role checks for protected routes
+- strict brief and citation schemas
+- a 12-case synthetic validation cohort
+- PDF input boundary and document/page hashing behind an extractor port
+- clinician-only review endpoint with required reason and expected-content hash
+- normalized Supabase migration with private storage, clinic-scoped RLS, immutable records, and atomic review RPC
 
-Current simplifications:
+Not implemented or not yet validated:
 
 - rate limits are process-local
 - notifications are synchronous
-- single-tenant reference implementation
+- the interactive demo uses embedded fictional source pages; no production PDF extraction adapter or upload screen is connected
+- no live AI draft provider is connected to the Stage 1 brief pipeline
+- the new migration has not been applied to a Supabase project in this repository run
+- OCR, EHR/FHIR ingestion, multi-clinic administration, and clinical interpretation remain outside Stage 1
 - appointment requests do not require staff approval UI beyond status controls
 - audit log rendering is intentionally minimal
 

@@ -14,8 +14,8 @@ export default async function LeadsPage() {
   return (
     <AdminLayout>
       <p className="medbay-label">Case queue</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#262626]">Intake Cases</h1>
-      <p className="mt-1 text-sm text-[#737373]">Structured, auditable patient intake cases and workflow status.</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#262626]">Visit preparation cases</h1>
+      <p className="mt-1 text-sm text-[#737373]">Source-linked patient context, missing records, review decisions, and workflow status.</p>
       <div className="mt-6 overflow-x-auto">
         <LeadTable leads={leads as Array<Record<string, unknown>>} />
       </div>

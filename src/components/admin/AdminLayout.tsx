@@ -11,7 +11,7 @@ import {
 
 const nav: Array<{ href: string; label: string; description: string; icon: LucideIcon }> = [
   { href: "/admin", label: "Overview", description: "Daily operating state", icon: LayoutDashboard },
-  { href: "/admin/leads", label: "Intake cases", description: "Review and route requests", icon: ClipboardList },
+  { href: "/admin/leads", label: "Visit preparation", description: "Review briefs and sources", icon: ClipboardList },
   { href: "/admin/conversations", label: "Conversations", description: "Patient message history", icon: MessageSquareText },
   { href: "/admin/appointments", label: "Appointments", description: "Scheduling handoff", icon: CalendarDays },
   { href: "/admin/knowledge", label: "Knowledge base", description: "Clinic operating context", icon: BookOpenText },
@@ -26,7 +26,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <Link href="/" className="group block">
             <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#60a5fa]">MedBay</p>
             <h1 className="mt-2 max-w-[11rem] text-[1.45rem] font-semibold leading-[1.05] tracking-[-0.055em] text-[#eef5ff] transition group-hover:text-[#bfdbfe]">
-              Clinical operations
+              Visit preparation
             </h1>
           </Link>
           <div className="mt-5 flex items-center justify-between gap-3 text-xs">
@@ -63,7 +63,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         <div className="mt-auto border-t border-[#1d355f]/70 pt-5">
           <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#64748b]">Review mode</p>
           <p className="mt-2 text-sm leading-6 text-[#94a3b8]">
-            Fictional clinic data. Built to demonstrate intake, safety routing, and staff review.
+            Fictional clinic data. Built to demonstrate source provenance, safety routing, and human review.
           </p>
         </div>
       </aside>
@@ -76,7 +76,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 Northstar Clinic
               </p>
               <p className="mt-1 hidden text-sm text-[#94a3b8] sm:block">
-                Intake review, policy decisions, scheduling handoff, and operational audit.
+                Source-linked context, reviewer approval, scheduling handoff, and operational audit.
               </p>
             </div>
             <Link

@@ -28,6 +28,7 @@ export function LeadTable({ leads }: { leads: Array<Record<string, unknown>> }) 
             <th className="px-4 py-3 font-semibold">Reason</th>
             <th className="px-4 py-3 font-semibold">Service</th>
             <th className="px-4 py-3 font-semibold">Urgency</th>
+            <th className="px-4 py-3 font-semibold">Brief review</th>
             <th className="px-4 py-3 font-semibold">Case status</th>
             <th className="px-4 py-3 font-semibold">Action</th>
           </tr>
@@ -40,6 +41,7 @@ export function LeadTable({ leads }: { leads: Array<Record<string, unknown>> }) 
               <td className="px-4 py-3 text-[#737373]">{String(lead.reason_for_visit || lead.goal || "Not provided")}</td>
               <td className="px-4 py-3 text-[#737373]">{String(lead.preferred_service || lead.consultation_type || "Not routed")}</td>
               <td className="px-4 py-3 text-[#737373]">{String(lead.urgency_level || "unknown")}</td>
+              <td className="px-4 py-3 text-[#737373]">{String(lead.brief_review_status || "draft").replace("_", " ")}</td>
               <td className="px-4 py-3">
                 {(() => {
                   const status = legacyStatusToIntakeStatus(String(lead.status || "opened"));
@@ -69,7 +71,7 @@ export function LeadTable({ leads }: { leads: Array<Record<string, unknown>> }) 
           ))}
           {localLeads.length === 0 ? (
             <tr>
-              <td colSpan={7} className="px-4 py-8 text-center text-[#737373]">
+              <td colSpan={8} className="px-4 py-8 text-center text-[#737373]">
                 No intake leads yet.
               </td>
             </tr>

@@ -128,7 +128,7 @@ async function verifyRealAdmin() {
     .from("profiles")
     .select("role")
     .eq("id", data.user.id)
-    .eq("role", "admin")
+    .in("role", ["admin", "staff", "clinician"])
     .maybeSingle();
 
   if (profileError || !profile) {
@@ -166,6 +166,37 @@ export async function resolveAdminAccess(): Promise<AdminAccess> {
   const response = await verifyRealAdmin();
   if (response) return { ok: false, response };
   return { ok: true, demo: false };
+}
+
+export type ClinicalReviewAccess =
+  | { ok: true; demo: boolean; reviewer: { id: string; name: string } }
+  | { ok: false; response: NextResponse };
+
+/** A final clinical-artifact decision requires a clinician profile, not a generic admin. */
+export async function resolveClinicalReviewAccess(): Promise<ClinicalReviewAccess> {
+  const cookieStore = await cookies();
+  if (isPortfolioAdminCookie(cookieStore.get(PORTFOLIO_ADMIN_COOKIE)?.value)) {
+    return {
+      ok: true,
+      demo: true,
+      reviewer: { id: "30000000-0000-4000-8000-000000000001", name: "Dr. Synthetic Reviewer" },
+    };
+  }
+
+  const supabase = await getServerSupabase();
+  if (!supabase) return { ok: false, response: NextResponse.json({ error: "auth_not_configured" }, { status: 503 }) };
+  const { data: auth, error: authError } = await supabase.auth.getUser();
+  if (authError || !auth.user) return { ok: false, response: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("id, name, role")
+    .eq("id", auth.user.id)
+    .eq("role", "clinician")
+    .maybeSingle();
+  if (error || !profile) return { ok: false, response: NextResponse.json({ error: "clinician_role_required" }, { status: 403 }) };
+
+  return { ok: true, demo: false, reviewer: { id: profile.id, name: profile.name || auth.user.email || "Clinician" } };
 }
 
 export function noStoreJson(data: unknown, init?: ResponseInit) {
