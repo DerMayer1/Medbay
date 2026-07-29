@@ -62,6 +62,10 @@ export type Lead = {
   created_at?: string;
   updatedAt?: string;
   updated_at?: string;
+  pre_consultation_brief?: unknown;
+  brief_review_status?: "draft" | "needs_review" | "approved" | "rejected";
+  brief_reviewed_by?: string;
+  brief_reviewed_at?: string;
 
   // Backward-compatible columns from the initial prototype.
   consultationType?: string;

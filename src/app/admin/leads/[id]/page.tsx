@@ -16,6 +16,8 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { CaseStatusControls } from "@/components/admin/CaseStatusControls";
 import { ConversationViewer } from "@/components/admin/ConversationViewer";
 import { InternalNotesEditor } from "@/components/admin/InternalNotesEditor";
+import { PreConsultationBriefReview } from "@/components/admin/PreConsultationBriefReview";
+import { isPreConsultationBrief } from "@/features/briefs/domain/pre-consultation-brief";
 import { evaluateIntakeCompleteness } from "@/features/intake/domain/intake-completeness";
 import type { AuditEvent, IntakeCase, IntakeCaseStatus } from "@/features/intake/domain/types";
 import { legacyStatusToIntakeStatus, leadToIntakeCase, leadToPatient } from "@/features/intake/infrastructure/legacy-mappers";
@@ -39,12 +41,15 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const completeness = evaluateIntakeCompleteness(intakeCase.fields);
   const auditEvents = ((bundle.auditEvents || []) as Array<Record<string, unknown>>).map(toAuditEvent);
   const riskFlags = extractRiskFlags(auditEvents, intakeCase.handoffRequired);
+  const preConsultationBrief = isPreConsultationBrief(bundle.lead.pre_consultation_brief)
+    ? bundle.lead.pre_consultation_brief
+    : null;
 
   return (
     <AdminLayout>
       <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
-          <p className="medbay-label">Intake Case Review</p>
+          <p className="medbay-label">Visit preparation review</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#262626]">{patient.name || "Unnamed patient"}</h1>
           <p className="mt-2 text-sm text-[#737373]">Case ID {intakeCase.id}</p>
         </div>
@@ -88,7 +93,17 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           <CaseDecisionPanel intakeCase={intakeCase} auditEvents={auditEvents} riskFlags={riskFlags} />
           <CaseTimeline intakeCase={intakeCase} auditEvents={auditEvents} />
 
-          <Panel icon={FileText} title="AI summary">
+          {preConsultationBrief ? (
+            <PreConsultationBriefReview caseId={intakeCase.id} brief={preConsultationBrief} />
+          ) : (
+            <Panel icon={FileText} title="Pre-consultation brief">
+              <p className="text-sm leading-6 text-[#737373]">
+                No source-linked brief is available. Staff must collect and identify the required records before physician review.
+              </p>
+            </Panel>
+          )}
+
+          <Panel icon={FileText} title="Administrative intake summary">
             <p className="text-sm leading-6 text-[#737373]">{intakeCase.summary || "No AI summary has been generated yet."}</p>
           </Panel>
 
@@ -174,6 +189,7 @@ function CaseTimeline({ intakeCase, auditEvents }: { intakeCase: IntakeCase; aud
     timelineStep("Message received", auditEvents.find((event) => event.action === "message_received"), true),
     timelineStep("Policy evaluated", auditEvents.find((event) => event.action === "policy_evaluated"), true),
     timelineStep("Fields extracted", auditEvents.find((event) => event.action === "intake_extracted"), true),
+    timelineStep("Brief prepared", auditEvents.find((event) => event.action === "brief_generated"), false),
     timelineStep(
       intakeCase.handoffRequired ? "Human review requested" : "Appointment requested",
       auditEvents.find((event) => event.action === "handoff_requested" || event.action === "appointment_requested"),
@@ -196,7 +212,7 @@ function CaseTimeline({ intakeCase, auditEvents }: { intakeCase: IntakeCase; aud
         <span className="rounded-full bg-[#eff6ff] px-3 py-1 text-xs font-semibold text-[#1d4ed8]">{intakeCase.status}</span>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-5">
         {steps.map((step, index) => (
           <div key={step.label} className="relative rounded-xl border border-[#ededed] bg-[#fafafa] p-4">
             <div className="flex items-start gap-3">

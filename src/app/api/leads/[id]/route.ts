@@ -5,6 +5,7 @@ import { enforceRateLimit, noStoreJson, rejectCrossOriginMutation, resolveAdminA
 import { leadPatchSchema } from "@/lib/validators";
 import { validateIntakeTransition } from "@/features/intake/domain/intake-workflow";
 import { legacyStatusToIntakeStatus } from "@/features/intake/infrastructure/legacy-mappers";
+import type { Lead } from "@/types/lead";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const rateLimitError = enforceRateLimit(_request, "admin_leads", { limit: 120, windowMs: 60_000 });
@@ -38,10 +39,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   try {
-    if (isDemo) return noStoreJson(updateDemoLeadRecord(id, input));
+    const patch: Partial<Lead> & { notes?: string } = { ...input };
 
-    const data = await updateLeadRecord(id, input);
-    await writeAuditLog({ action: "status_changed", entityType: "intake_case", entityId: id, metadata: input });
+    if (isDemo) return noStoreJson(updateDemoLeadRecord(id, patch));
+
+    const data = await updateLeadRecord(id, patch);
+    const action = input.status ? "status_changed" : "intake_case_updated";
+    const auditMetadata: Record<string, unknown> = input.status
+      ? { to: input.status }
+      : { fieldsUpdated: Object.keys(input) };
+    await writeAuditLog({ action, entityType: "intake_case", entityId: id, metadata: auditMetadata });
     return noStoreJson(data);
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update intake case" }, { status: 400 });

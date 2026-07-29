@@ -44,6 +44,13 @@ export const leadPatchSchema = z.object({
   notes: z.string().optional(),
 });
 
+export const briefReviewSchema = z.object({
+  caseId: z.string().uuid(),
+  expectedContentSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  decision: z.enum(["approved", "rejected"]),
+  reason: z.string().trim().min(1).max(1000),
+}).strict();
+
 export const knowledgePayloadSchema = z.object({
   category: z.enum(["services", "pricing", "schedule", "policies", "faq", "safety"]),
   title: z.string().min(1),

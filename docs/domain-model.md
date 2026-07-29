@@ -28,6 +28,24 @@ Statuses:
 - `closed`
 - `discarded`
 
+## PreConsultationBrief
+
+A versioned, source-linked visit-preparation artifact. It contains factual statements and citations composed of a document ID, page number, and exact quote.
+
+Review states:
+
+- `needs_review`
+- `approved`
+- `rejected`
+
+Every quote must occur in the referenced extracted page text. A final decision records the clinician identity, reason, timestamp, and reviewed content hash. The version content and decision are immutable; corrections create a new version.
+
+## SourceDocument and SourcePage
+
+Stage 1 accepts born-digital PDFs only. Each source stores immutable document metadata and SHA-256. Extracted pages are consecutive, non-empty, capped at 100, and individually hashed. OCR is outside Stage 1.
+
+The brief must not contain autonomous diagnosis, clinical risk scoring, treatment recommendations, prescriptions, or interpretation of exams.
+
 ## Conversation and Message
 
 Conversation is the communication container. Message is the immutable user or assistant entry attached to a conversation.

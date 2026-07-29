@@ -15,10 +15,10 @@ const navItems = [
 ];
 
 const productCards = [
-  ["White-label intake", "A patient-facing intake path that feels simple while the backend keeps the case structured."],
-  ["From message to handoff", "Conversation, policy decision, appointment request, and review state are connected."],
-  ["Safety before response", "Clinical requests and urgent language route before the assistant can improvise."],
-  ["Portfolio demo mode", "Demo data loads immediately so the product can be reviewed without service latency."],
+  ["Source-linked context", "Every displayed fact points back to the intake form, referral, medication list, or record it came from."],
+  ["Missing-record visibility", "Staff can see what is still needed before the patient arrives instead of discovering gaps during the visit."],
+  ["Human approval", "A pre-consultation brief stays in review until an authorized clinic reviewer explicitly approves or rejects it."],
+  ["Clinical boundary", "The workflow organizes records; it does not diagnose, score risk, recommend treatment, or interpret exams."],
 ];
 
 export default function Home() {
@@ -54,11 +54,11 @@ function Hero() {
             Private beta
           </span>
           <h1 className="mt-5 text-balance text-[4rem] font-normal leading-[1.02] tracking-[-0.07em] text-[#262626] sm:text-[5rem] lg:text-[5.5rem]">
-            The Platform for Clinical Intake
+            Source-linked context before the visit
           </h1>
           <p className="mx-auto mt-5 max-w-[700px] text-xl leading-8 text-[#737373]">
-            MedBay gives clinics a digital front door for patient intake, AI extraction, safety routing, appointment
-            handoff, and operational review.
+            MedBay assembles intake and available records into a traceable pre-consultation brief, shows what is
+            missing, and keeps the clinic reviewer in control of approval.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/admin/login" className="group inline-flex h-10 items-center gap-3 rounded-[9px] bg-[#3b82f6] px-4 text-sm font-bold text-white ring-1 ring-[#60a5fa] transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#2563eb] active:scale-[0.98]">
@@ -87,11 +87,11 @@ function HeroProofRail() {
       <div className="rounded-[22px] bg-[#fafafa] p-6 ring-1 ring-[#ededed]">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#3b82f6]">What happens next</p>
         <h2 className="mt-4 max-w-[360px] text-[1.65rem] font-medium leading-[1.12] tracking-[-0.055em] text-[#262626]">
-          One patient message becomes a staff-ready case.
+          Scattered records become one reviewable brief.
         </h2>
         <p className="mt-4 max-w-[420px] text-sm leading-7 text-[#737373]">
-          The first interaction is not the product endpoint. MedBay parses the request, checks policy boundaries, and
-          prepares the clinic team to act.
+          MedBay connects extracted facts to their original sources, checks for missing records, and prepares the
+          artifact for human review without making a clinical decision.
         </p>
         <a href="#products" className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#262626]">
           See the lifecycle <span className="text-xl text-[#3b82f6]">›</span>
@@ -285,11 +285,11 @@ function ProductSection() {
             <span className="text-sm text-[#262626]">Redefining intake operations</span>
           </div>
           <h2 className="max-w-[440px] text-[3.5rem] font-medium leading-[1.08] tracking-[-0.065em] text-[#262626]">
-            Clinical intake meets operations.
+            Visit preparation with provenance.
           </h2>
           <p className="mt-7 max-w-[520px] text-base leading-8 text-[#737373]">
-            The patient sees one simple path. The clinic receives structured fields, safety decisions, scheduling state,
-            and review context.
+            The patient sees one simple intake path. The clinic receives a source-linked brief, missing-document list,
+            safety decisions, and an explicit approval state.
           </p>
           <a href="#workflow" className="group mt-7 inline-flex h-12 items-center gap-3 rounded-[10px] bg-[#3b82f6] px-4 text-sm font-bold text-white">
             Contact flow
@@ -1263,11 +1263,11 @@ function TrustSection() {
           >
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#3b82f6]">Safety boundary</p>
             <h2 className="mt-5 max-w-[560px] text-[3.35rem] font-medium leading-[1.04] tracking-[-0.065em] text-[#262626]">
-              Administrative intake is automated. Clinical judgment is not.
+              Record preparation is assisted. Clinical judgment is not.
             </h2>
             <p className="mt-6 max-w-[520px] text-base leading-8 text-[#737373]">
-              Medbay assists with intake, scheduling, knowledge-base answers, and handoff. Deterministic policy
-              decisions decide when to answer, clarify, escalate, or block before the assistant can continue.
+              Medbay assists with intake, source-bounded extraction, record organization, scheduling, and handoff.
+              Deterministic checks enforce provenance and decide when to clarify, escalate, or block.
             </p>
           </motion.div>
 
@@ -1495,7 +1495,7 @@ function SafetySection() {
         >
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#3b82f6]">Safety boundary</p>
           <h2 className="mx-auto mt-5 max-w-[920px] text-[3.5rem] font-medium leading-[1.05] tracking-[-0.065em]">
-            Administrative AI for intake, routing, scheduling, and review. Not diagnosis.
+            Source-linked visit preparation with human approval. Not diagnosis.
           </h2>
           <div className="mt-9 flex justify-center gap-3">
             <a href="#intake-demo" className="rounded-[10px] bg-[#3b82f6] px-5 py-3 text-sm font-bold text-white ring-1 ring-[#60a5fa]">

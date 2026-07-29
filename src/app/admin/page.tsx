@@ -25,9 +25,10 @@ export default async function AdminDashboard() {
   const waiting = intakeCases.filter((item) => item.caseStatus === "needs_human_review").length;
   const readyForScheduling = intakeCases.filter((item) => item.caseStatus === "ready_for_scheduling").length;
   const scheduled = intakeCases.filter((item) => item.caseStatus === "scheduled").length + appointments.length;
+  const briefsAwaitingReview = leads.filter((item) => item.brief_review_status === "needs_review").length;
 
   const cards = [
-    { label: "Opened cases", value: intakeCases.filter((item) => item.caseStatus === "opened").length, icon: Users },
+    { label: "Briefs awaiting review", value: briefsAwaitingReview, icon: Users },
     { label: "Needs human review", value: waiting, icon: UserCheck },
     { label: "Scheduled appointments", value: scheduled, icon: Clock },
     { label: "Ready for scheduling", value: readyForScheduling, icon: Activity },
@@ -40,10 +41,10 @@ export default async function AdminDashboard() {
         <div>
           <p className="medbay-label">Demo operations</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#262626]">Operations overview</h1>
-          <p className="mt-1 text-sm text-[#737373]">Operations workspace for Northstar Clinic intake workflows.</p>
+          <p className="mt-1 text-sm text-[#737373]">Operations workspace for source-linked pre-consultation preparation.</p>
         </div>
         <Link href="/admin/leads" className="inline-flex items-center gap-2 rounded-md bg-[#3b82f6] px-4 py-2 text-sm font-semibold text-[#ffffff]">
-          Review intake cases
+          Review visit briefs
           <ArrowUpRight className="h-4 w-4" />
         </Link>
       </div>

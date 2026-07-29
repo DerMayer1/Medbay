@@ -1,6 +1,6 @@
 # Medbay Architecture
 
-Medbay is organized around a feature-oriented intake domain.
+Medbay is organized around a feature-oriented intake domain plus a source-bounded visit-preparation domain.
 
 ## Runtime
 
@@ -24,6 +24,14 @@ src/features/intake
     legacy-mappers.ts
 ```
 
+```text
+src/features/briefs
+  domain
+    pre-consultation-brief.ts
+```
+
+The brief domain is deterministic. It validates a strict 2.0.1 schema and verifies that every citation quote occurs on the exact extracted PDF page before approval can succeed.
+
 ## Request Flow
 
 ```text
@@ -45,6 +53,23 @@ Patient message
   -> UI response
 ```
 
+## Brief Review Flow
+
+```text
+born-digital PDF (max 6 MB)
+  -> extractor port returns page text
+  -> document and page SHA-256 hashes
+  -> strict, versioned pre-consultation brief
+  -> deterministic provenance validation
+  -> identified clinician review with expected content hash
+  -> atomic approve / reject + decision + audit event
+  -> immutable exportable version
+```
+
+The current demo begins after extraction with fictional embedded pages. The PDF validator/extractor port exists, but a concrete PDF library, upload UI, storage orchestration, and AI draft provider are not connected in 2.0.1. OCR and EHR/FHIR ingestion are explicitly out of scope.
+
+Audit events record the review decision, reviewer boundary, timestamp, brief version, and provenance-check result. They do not duplicate the brief facts or source content into the audit metadata.
+
 ## Adapter Boundary
 
 The use case depends on interfaces:
@@ -62,8 +87,8 @@ Production integrations use Supabase, OpenAI, Resend, and Google Calendar behind
 
 ## Persistence
 
-Supabase stores profiles, conversations, messages, leads, knowledge items, appointments, and audit logs. The `leads` table remains for backwards compatibility, while application code maps it to `IntakeCase`.
+Migration 005 adds clinics, source documents, source pages, immutable brief versions, and immutable review decisions. The review RPC uses the authenticated clinician session and commits the final status, decision, and audit event in one transaction. The migration is checked in but was not applied during this implementation run.
 
 ## Security
 
-Admin routes use Supabase Auth when configured. Mutating routes enforce same-origin checks. API responses containing operational data are returned with `Cache-Control: no-store`.
+Admin routes use Supabase Auth when configured. Final brief review requires a `clinician` profile; generic admins cannot approve it. Mutating routes enforce same-origin checks. The source bucket is private and clinic-scoped through RLS. API responses containing operational data use `Cache-Control: no-store`.
