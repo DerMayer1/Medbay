@@ -54,7 +54,10 @@ export const preConsultationBriefSchema = z.object({
   specialty: z.literal("cardiology"),
   consultationType: z.literal("first_consultation"),
   status: reviewStatusSchema,
-  generatedAt: z.string().datetime(),
+  // PostgreSQL renders timestamptz with a numeric offset ("+00:00"), which the
+  // default zod datetime rule rejects. Both forms must parse or a brief read
+  // back from the database can never be approved.
+  generatedAt: z.string().datetime({ offset: true }),
   generatedBy: z.enum(["synthetic_stage_1", "ai_provider"]),
   contentSha256: sha256Schema,
   purpose: z.string().trim().min(1).max(500),
@@ -65,7 +68,7 @@ export const preConsultationBriefSchema = z.object({
     reviewerName: z.string().trim().min(1).max(120),
     decision: z.enum(["approved", "rejected"]),
     reason: z.string().trim().min(1).max(1_000),
-    reviewedAt: z.string().datetime(),
+    reviewedAt: z.string().datetime({ offset: true }),
   }).strict().optional(),
 }).strict();
 

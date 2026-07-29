@@ -42,6 +42,8 @@ Medbay does **not** diagnose, calculate clinical risk, prescribe, recommend trea
 - Public intake assistant with conversational data collection.
 - Deterministic safety policy engine for clinical-risk boundaries.
 - Structured intake extraction and completeness scoring.
+- Born-digital PDF upload with type, size, signature, page and hashing checks.
+- Deterministic, source-bounded brief drafting in which every fact quotes the sentence it came from.
 - Strictly validated cardiology pre-consultation brief versions with exact page quotes.
 - Clinician-only approval or rejection with a required reason and optimistic hash check.
 - Intake case workflow with validated status transitions.
@@ -67,9 +69,25 @@ Public intake assistant
   -> admin case review console
 ```
 
+The Stage 1 visit-preparation path runs alongside it:
+
+```text
+Staff upload born-digital PDFs
+  -> /api/intake-cases/[id]/documents
+  -> PDF type, signature, size and page validation
+  -> unpdf extraction -> document and page SHA-256
+  -> attach_source_document (document + pages in one transaction)
+  -> /api/intake-cases/[id]/brief
+  -> deterministic source-bounded draft
+  -> immutable brief version in needs_review
+  -> clinician review -> review_brief_version RPC
+  -> status + decision + audit event in one transaction
+  -> print / export approved version
+```
+
 Business logic lives under `src/features/intake`. Route handlers stay thin, adapters isolate persistence and provider integrations, and the domain layer owns deterministic workflow and policy decisions.
 
-The Stage 1 brief path lives under `src/features/briefs`. Its PDF boundary validates file type/size/magic bytes and hashes documents/pages after a supplied extractor returns text. A production PDF extraction adapter and AI draft provider are intentionally not connected in 2.0.1; the checked-in cohort uses synthetic extracted pages so the provenance and review contracts can be tested deterministically.
+The Stage 1 brief path lives under `src/features/briefs`. Its PDF boundary validates file type/size/magic bytes and hashes documents/pages after the `unpdf` extractor returns page text. Drafting is deterministic and source-bounded: every generated fact quotes the sentence it was derived from, so provenance holds by construction and is still verified independently before approval. An AI draft provider is intentionally not connected in 2.0.1; that is Stage 2.
 
 Key files:
 
@@ -79,7 +97,12 @@ Key files:
 - `src/features/intake/domain/intake-workflow.ts` - case status transitions.
 - `src/features/intake/domain/intake-completeness.ts` - required field scoring.
 - `src/features/intake/infrastructure/adapters.ts` - Supabase/OpenAI/Resend/Calendar adapters.
-- `supabase/migrations` - database schema and RLS policies.
+- `src/features/briefs/application/stage-1-pipeline.ts` - upload, extraction and version generation use cases.
+- `src/features/briefs/application/validate-stage-1-input.ts` - PDF boundary and document budget.
+- `src/features/briefs/domain/pre-consultation-brief.ts` - brief schema and provenance validation.
+- `src/features/briefs/domain/deterministic-draft.ts` - source-bounded draft generation.
+- `src/features/briefs/infrastructure/unpdf-extractor.ts` - born-digital PDF text extraction.
+- `supabase/migrations` - database schema, RLS policies, immutability triggers and atomic RPCs.
 
 ## Domain Model
 
@@ -140,11 +163,13 @@ Policy decisions return `allow`, `block`, `escalate`, or `ask_clarifying_questio
 - TypeScript
 - Tailwind CSS
 - Supabase / PostgreSQL
+- unpdf (born-digital PDF extraction)
 - OpenAI API
 - Resend
 - Google Calendar API
 - Zod
 - Vitest
+- PGlite (in-process PostgreSQL for database contract tests)
 - Vercel
 
 ## Getting Started
@@ -201,6 +226,25 @@ npm run lint       # Run ESLint
 npm test           # Run Vitest suite
 ```
 
+## Testing
+
+`npm test` runs the full suite, including the database contract tests. Those apply every
+migration to an in-process PostgreSQL instance via PGlite and assert the immutability
+triggers, clinic-scoped RLS, the document budget, the derived content digest, and
+transaction rollback. No Docker or network access is required.
+
+Supabase's hosted auth and storage are shimmed in that harness, so the storage policies and
+JWT-derived `auth.uid()` are not covered. `tests/integration/liveDatabase.test.ts` covers
+that layer against a real project and is skipped unless the following are set:
+
+```bash
+SUPABASE_TEST_URL=http://127.0.0.1:54321
+SUPABASE_TEST_SERVICE_ROLE_KEY=...
+SUPABASE_TEST_ANON_KEY=...
+```
+
+To produce them locally, run `npx supabase start` followed by `npx supabase db reset`.
+
 ## Production Notes
 
 Implemented and testable in the synthetic Stage 1 scope:
@@ -214,26 +258,34 @@ Implemented and testable in the synthetic Stage 1 scope:
 - audit event model
 - rate limiting and same-origin mutation checks
 - strict brief and citation schemas
-- a 12-case synthetic validation cohort
+- a 12-case synthetic validation cohort covering every approved fact section
 - PDF input boundary and document/page hashing behind an extractor port
+- born-digital PDF extraction via unpdf, tested against real generated PDF bytes
+- upload and generation endpoints with an admin upload panel, backed by one pipeline shared by the Supabase and synthetic stores
+- deterministic source-bounded drafting; corrections create a new version rather than editing one
 - clinician-only review endpoint with required reason and expected-content hash
+- provenance re-verified before approval on both the authenticated and synthetic review paths
 - normalized Supabase migration with private storage, clinic-scoped RLS, immutable records, and atomic review RPC
+- database contract tests that apply every migration to an in-process PostgreSQL instance and assert immutability, clinic isolation, and transaction rollback
 
 Not implemented or not yet validated:
 
 - rate limits are process-local
 - notifications are synchronous
-- the interactive demo uses embedded fictional source pages; no production PDF extraction adapter or upload screen is connected
-- no live AI draft provider is connected to the Stage 1 brief pipeline
-- the new migration has not been applied to a Supabase project in this repository run
+- no live AI draft provider is connected to the Stage 1 brief pipeline; drafting is deterministic
+- the migrations are exercised against an in-process PostgreSQL instance, not a managed Supabase project; storage policies and JWT-derived `auth.uid()` remain unverified
+- draft section routing is literal pattern matching evaluated in a fixed order, so a statement matching several sections is filed under the first rule that matches; clinician review is the control
+- upload size is validated after the request body is read, so a request-size limit at the edge is still required
 - OCR, EHR/FHIR ingestion, multi-clinic administration, and clinical interpretation remain outside Stage 1
 - appointment requests do not require staff approval UI beyond status controls
 - audit log rendering is intentionally minimal
+- dependency audit is outstanding: `npm audit` reports known advisories in the current tree
 
 For a production clinic deployment checklist, see `docs/production-readiness.md`.
 
 ## Documentation
 
+- `docs/pivot-prd.md` - Medbay 2.x product direction, success gates, implementation truth, and delivery stages.
 - `docs/product-spec.md` - product goals and acceptance criteria.
 - `docs/architecture.md` - runtime and feature boundaries.
 - `docs/domain-model.md` - product entities and workflow concepts.
