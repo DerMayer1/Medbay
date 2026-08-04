@@ -233,9 +233,10 @@ migration to an in-process PostgreSQL instance via PGlite and assert the immutab
 triggers, clinic-scoped RLS, the document budget, the derived content digest, and
 transaction rollback. No Docker or network access is required.
 
-Supabase's hosted auth and storage are shimmed in that harness, so the storage policies and
-JWT-derived `auth.uid()` are not covered. `tests/integration/liveDatabase.test.ts` covers
-that layer against a real project and is skipped unless the following are set:
+Supabase's hosted auth and storage are shimmed in that harness. `tests/integration/liveDatabase.test.ts`
+covers that layer against a real project — storage policies, JWT-derived `auth.uid()`, and the
+review RPC under real sessions. It passed against a managed project on 2026-08-04 and stays
+skipped unless the following are set:
 
 ```bash
 SUPABASE_TEST_URL=http://127.0.0.1:54321
@@ -273,7 +274,7 @@ Not implemented or not yet validated:
 - rate limits are process-local
 - notifications are synchronous
 - no live AI draft provider is connected to the Stage 1 brief pipeline; drafting is deterministic
-- the migrations are exercised against an in-process PostgreSQL instance, not a managed Supabase project; storage policies and JWT-derived `auth.uid()` remain unverified
+- the migrations have been applied to exactly one managed Supabase project; nothing yet proves they apply cleanly to a second
 - draft section routing is literal pattern matching evaluated in a fixed order, so a statement matching several sections is filed under the first rule that matches; clinician review is the control
 - upload size is validated after the request body is read, so a request-size limit at the edge is still required
 - OCR, EHR/FHIR ingestion, multi-clinic administration, and clinical interpretation remain outside Stage 1

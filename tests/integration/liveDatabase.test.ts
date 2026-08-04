@@ -3,17 +3,18 @@ import { createHash, randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
 
 /**
- * Live database gates: immutability, atomicity, clinic isolation and the
- * clinician-only review RPC. These cannot be proven in memory, so they run only
- * against a disposable Supabase instance.
+ * Live database gates: immutability, atomicity, clinic isolation, the
+ * clinician-only review RPC, and the private storage bucket. These cannot be
+ * proven in memory, so they run only against a real Supabase project.
  *
- *   npx supabase start
- *   npx supabase db reset
- *   # then export the printed URL and keys:
- *   SUPABASE_TEST_URL=http://127.0.0.1:54321 \
+ *   SUPABASE_TEST_URL=https://<ref>.supabase.co \
  *   SUPABASE_TEST_SERVICE_ROLE_KEY=... \
  *   SUPABASE_TEST_ANON_KEY=... \
  *   npx vitest run tests/integration/liveDatabase.test.ts
+ *
+ * Point this at a project you can afford to pollute. Every run creates auth
+ * users, a case, source documents and brief versions, and the immutability
+ * triggers mean that data cannot be deleted afterwards by design.
  */
 const url = process.env.SUPABASE_TEST_URL;
 const serviceRoleKey = process.env.SUPABASE_TEST_SERVICE_ROLE_KEY;
@@ -232,5 +233,52 @@ describe.skipIf(!live)("Stage 1 live database gates", () => {
       .select("*", { count: "exact", head: true })
       .eq("entity_id", versionId);
     expect(count).toBe(1);
+  });
+
+  /**
+   * Storage policies are the one surface the in-process PostgreSQL harness
+   * cannot reach, because objects live in Supabase's storage service rather
+   * than in the schema. These assert the private bucket denies cross-clinic
+   * access at the object level.
+   */
+  describe("private source storage", () => {
+    const bucket = "clinical-source-pdfs";
+    let ownPath: string;
+    const pdf = () => new Blob([new TextEncoder().encode("%PDF-1.4 synthetic")], { type: "application/pdf" });
+
+    beforeAll(() => {
+      ownPath = `${clinicId}/${caseId}/referral.pdf`;
+    });
+
+    it("lets clinic staff upload under their own clinic prefix", async () => {
+      await admin.storage.from(bucket).remove([ownPath]);
+      const { error } = await staffClient.storage.from(bucket).upload(ownPath, pdf(), { contentType: "application/pdf" });
+      expect(error).toBeNull();
+    });
+
+    it("denies a clinician from another clinic reading the object", async () => {
+      const { data, error } = await outsiderClient.storage.from(bucket).download(ownPath);
+      expect(data).toBeNull();
+      expect(error).not.toBeNull();
+    });
+
+    it("denies writing outside your own clinic prefix", async () => {
+      const { error } = await outsiderClient.storage
+        .from(bucket)
+        .upload(`${clinicId}/${caseId}/intruder.pdf`, pdf(), { contentType: "application/pdf" });
+      expect(error).not.toBeNull();
+    });
+
+    it("is not readable without a session", async () => {
+      const anon = createClient(url!, anonKey!);
+      const { data, error } = await anon.storage.from(bucket).download(ownPath);
+      expect(data).toBeNull();
+      expect(error).not.toBeNull();
+
+      // And not reachable as a public object either.
+      const publicUrl = anon.storage.from(bucket).getPublicUrl(ownPath).data.publicUrl;
+      const response = await fetch(publicUrl);
+      expect(response.ok).toBe(false);
+    });
   });
 });

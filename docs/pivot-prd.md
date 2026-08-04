@@ -242,13 +242,20 @@ The baseline, sample size, specialty-specific relevance, and measurement method 
 - a five-document Stage 1 budget enforced at the upload boundary and by a database trigger
 - automated coverage for authorization, stale-hash concurrency, repeated final decisions, and wrong-page citations
 
-### Implemented but not live-validated
+### Live-validated
 
-- Supabase storage bucket and object policies
-- JWT-derived `auth.uid()` as resolved by Supabase Auth
-- migration application against a managed Supabase project
+On 2026-08-04 migration 005 was applied to a managed Supabase project (PostgreSQL 17.6) and all 13 live gates passed, including the storage policies. The previously unverified hosted layer is now covered:
 
-Every migration now applies cleanly to an in-process PostgreSQL 18 instance, and the triggers, policies, clinic isolation and review RPC are exercised there. What remains unverified is the hosted Supabase layer: the storage policies have no coverage, and `auth.uid()` is shimmed by a session setting rather than a real JWT claim.
+- Supabase storage bucket and object policies: cross-clinic download denied, writes outside a clinic prefix denied, objects unreachable without a session and via public URL.
+- JWT-derived `auth.uid()` as resolved by Supabase Auth, exercised by the clinician-only review RPC and the clinic isolation checks.
+- Migration application against a managed project, over a database that already held live rows. The backfill preserved all 49 existing records and set `clinic_id` on every one.
+
+Two harnesses now cover the schema. `tests/integration/databaseContracts.test.ts` runs in process via PGlite on every CI run; `tests/integration/liveDatabase.test.ts` runs against a real project and stays skipped without credentials. The in-process suite remains the regression gate because it needs no secrets.
+
+### Remaining database caveats
+
+- The migration has been applied to exactly one project. Nothing yet proves it applies cleanly to a second, and it is not idempotent in the sense of being safe to re-run against a schema mid-upgrade.
+- The live suite accumulates data by design: the immutability triggers forbid deleting the rows it creates.
 
 ### Connected in Stage 1B
 
@@ -305,9 +312,9 @@ Make the existing stack safe to run outside demo mode, as the prerequisite for e
 | Production dependency tree free of known high-severity advisories, gated in CI | Done |
 | Credential-less admin refused whenever a service-role credential is present | Done |
 | Structured JSON logging and a vendor-neutral error reporting seam | Done |
-| Migrations applied to a managed Supabase project; storage policies and JWT `auth.uid()` verified | **Open** — see `docs/supabase-validation-runbook.md` |
+| Migrations applied to a managed Supabase project; storage policies and JWT `auth.uid()` verified | Done — 2026-08-04, see `docs/supabase-validation-runbook.md` |
 
-Phase 0 is complete only when the runbook has been executed and its outcome recorded in §12.
+**Phase 0 is complete.** The runbook was executed on 2026-08-04 and its outcome is recorded in §12. The stack now runs outside demo mode against real infrastructure, which was the prerequisite for every commercial phase that follows.
 
 ### Stage 2 — supervised AI evaluation
 
