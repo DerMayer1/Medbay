@@ -37,8 +37,14 @@ applies to them.
 
 ## Dependency advisories
 
-CI gates the shipped dependency tree with `npm run audit:prod`
-(`npm audit --omit=dev --audit-level=high`). The production tree is clean.
+CI gates the shipped dependency tree with `scripts/audit-production.mjs`. The production tree
+is clean.
+
+The script exists because `npm audit --omit=dev --audit-level=high` cannot be trusted as a
+gate: npm filters the *report* by `--omit=dev` but derives its *exit code* from the full tree,
+so a dev-only advisory fails the build while the JSON reports zero production vulnerabilities.
+The script reads the filtered JSON and decides for itself. It prints dev-only advisories so
+they stay visible instead of accumulating unseen.
 
 One dev-only advisory is accepted and tracked:
 

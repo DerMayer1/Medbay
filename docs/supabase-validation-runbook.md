@@ -4,7 +4,11 @@
 verification gaps that an in-process PostgreSQL harness cannot cover — the storage policies and
 JWT-derived `auth.uid()`.
 
-**Status:** not yet executed. This is the last open item in Phase 0.
+**Status:** executed 2026-08-04 against project `plqnlmvscfzqlofhegri`. Migration 005 applied
+cleanly, all 13 live gates pass including the storage policies. Phase 0 is closed.
+
+Keep this document: it is the procedure for any future environment, and the migration has still
+only been applied to one project.
 
 ## What is already proven without this
 
@@ -72,19 +76,27 @@ cross-clinic denial, atomic review, and repeated-decision conflict.
 > catching up with the managed environment, not necessarily schema defects. Read each
 > failure before changing any migration.
 
-### 4. Verify the storage policies by hand
+### 4. Storage policies
 
-The automated suite does not cover object-level access. With two clinics seeded:
-
-1. Upload a PDF as clinic A staff to `clinic-a-uuid/case-uuid/file.pdf`.
-2. Signed in as clinic B, attempt to download that exact path. It must fail.
-3. Attempt an upload to a path **not** prefixed with your own clinic id. It must fail.
-4. Confirm the object is not reachable via an unauthenticated public URL.
+These were originally a manual checklist. They are now automated in the same suite, under
+`private source storage`: upload beneath your own clinic prefix succeeds, a clinician from
+another clinic cannot download the object, writing outside your own prefix is denied, and the
+object is unreachable both without a session and via a public URL.
 
 ### 5. Record the outcome
 
-Update `docs/pivot-prd.md` §12 to move storage policies and JWT `auth.uid()` out of
-"implemented but not live-validated", and note the date and project used.
+Update `docs/pivot-prd.md` §12 and §14 with the date and project used.
+
+## Test data accumulates by design
+
+Every run creates three auth users, a clinic pair, a case, source documents and brief versions.
+The immutability triggers mean brief versions, source documents, source pages and review
+decisions **cannot be deleted afterwards** — that is the property under test, not a defect.
+
+Run this against a project you can afford to pollute. After the first two runs against
+`plqnlmvscfzqlofhegri` the project held 7 auth users. If accumulation becomes a problem, create a
+fresh project rather than trying to clean up, because the interesting rows are the ones the
+schema refuses to remove.
 
 ## Safety constraints
 

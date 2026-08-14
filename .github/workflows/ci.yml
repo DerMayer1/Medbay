@@ -19,7 +19,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-      # Gates the shipped dependency tree. Dev-only advisories are tracked
-      # separately in docs/security-hardening.md; see the brace-expansion
-      # exception, which has no upstream fix compatible with minimatch v3.
-      - run: npm run audit:prod
+      # Gates the shipped dependency tree. Invoked directly rather than through
+      # `npm run` so the nested npm audit does not inherit the outer npm
+      # invocation. Dev-only advisories are reported but do not fail the build;
+      # see docs/security-hardening.md for the accepted exceptions.
+      - run: node scripts/audit-production.mjs
