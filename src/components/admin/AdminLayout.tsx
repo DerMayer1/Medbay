@@ -1,22 +1,5 @@
 import Link from "next/link";
-import {
-  BookOpenText,
-  CalendarDays,
-  ClipboardList,
-  LayoutDashboard,
-  MessageSquareText,
-  ShieldCheck,
-  type LucideIcon,
-} from "lucide-react";
-
-const nav: Array<{ href: string; label: string; description: string; icon: LucideIcon }> = [
-  { href: "/admin", label: "Overview", description: "Daily operating state", icon: LayoutDashboard },
-  { href: "/admin/leads", label: "Visit preparation", description: "Review briefs and sources", icon: ClipboardList },
-  { href: "/admin/conversations", label: "Conversations", description: "Patient message history", icon: MessageSquareText },
-  { href: "/admin/appointments", label: "Appointments", description: "Scheduling handoff", icon: CalendarDays },
-  { href: "/admin/knowledge", label: "Knowledge base", description: "Clinic operating context", icon: BookOpenText },
-  { href: "/admin/settings", label: "Safety rules", description: "Policy and provider posture", icon: ShieldCheck },
-];
+import { AdminMobileNav, AdminSidebarNav } from "@/components/admin/AdminNav";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -37,28 +20,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="mt-7 space-y-1" aria-label="Admin navigation">
-          <p className="px-2 pb-2 font-mono text-[0.64rem] font-bold uppercase tracking-[0.16em] text-[#64748b]">
-            Console
-          </p>
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="group grid grid-cols-[1.25rem_1fr] gap-3 rounded-[12px] px-2.5 py-3 text-sm transition duration-300 hover:bg-[#0b1629]"
-            >
-              <item.icon className="mt-0.5 h-4 w-4 text-[#60a5fa] transition group-hover:text-[#bfdbfe]" strokeWidth={1.8} />
-              <span>
-                <span className="block font-semibold tracking-[-0.01em] text-[#dceafe] transition group-hover:text-[#ffffff]">
-                  {item.label}
-                </span>
-                <span className="mt-0.5 block text-xs leading-5 text-[#64748b] transition group-hover:text-[#94a3b8]">
-                  {item.description}
-                </span>
-              </span>
-            </Link>
-          ))}
-        </nav>
+        <AdminSidebarNav />
 
         <div className="mt-auto border-t border-[#1d355f]/70 pt-5">
           <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#64748b]">Review mode</p>
@@ -73,7 +35,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <div className="mx-auto flex max-w-[1360px] items-center justify-between gap-4">
             <div>
               <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#64748b]">
-                Northstar Clinic
+                <span className="text-[#60a5fa] md:hidden">MedBay · </span>Northstar Clinic
               </p>
               <p className="mt-1 hidden text-sm text-[#94a3b8] sm:block">
                 Source-linked context, reviewer approval, scheduling handoff, and operational audit.
@@ -81,11 +43,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </div>
             <Link
               href="/"
-              className="rounded-[10px] border border-[#1d355f] bg-[#0a1224] px-4 py-2 text-sm font-semibold text-[#7db7ff] transition hover:border-[#60a5fa] hover:bg-[#10264a] active:scale-[0.98]"
+              className="shrink-0 rounded-[10px] border border-[#1d355f] bg-[#0a1224] px-4 py-2 text-sm font-semibold text-[#7db7ff] transition hover:border-[#60a5fa] hover:bg-[#10264a] active:scale-[0.98]"
             >
               Public intake
             </Link>
           </div>
+          <AdminMobileNav />
         </header>
 
         <main className="relative px-5 py-6 md:px-8">

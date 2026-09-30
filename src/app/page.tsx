@@ -153,13 +153,12 @@ function HeroProofRail() {
 function Header() {
   return (
     <header className="sticky top-0 z-40 mx-auto flex h-[66px] max-w-[1048px] items-center justify-between px-4 pt-2">
-      <Link href="/" className="flex items-center">
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-[#93c5fd] text-[11px] font-black text-white">
-          ME
+      <Link href="/" className="flex items-center gap-2.5" aria-label="MedBay home">
+        <span className="relative grid h-8 w-8 place-items-center rounded-[10px] bg-[linear-gradient(135deg,#60a5fa,#1d4ed8)] shadow-[0_8px_24px_-10px_rgba(59,130,246,0.9)]">
+          <span className="absolute h-3.5 w-[3px] rounded-full bg-[#eef5ff]" />
+          <span className="absolute h-[3px] w-3.5 rounded-full bg-[#eef5ff]" />
         </span>
-        <span className="-ml-2 grid h-8 w-8 place-items-center rounded-full bg-[#2563eb] text-[11px] font-black text-white">
-          DB
-        </span>
+        <span className="text-[15px] font-semibold tracking-[-0.03em] text-[#262626]">MedBay</span>
       </Link>
 
       <nav className="hidden h-12 items-center gap-1 rounded-2xl bg-white px-3 text-xs font-medium text-[#262626] ring-1 ring-[#e5e5e5] md:flex">
@@ -211,7 +210,7 @@ function HeroChatShowcase() {
     >
       <motion.div
         aria-hidden="true"
-        className="absolute -left-6 top-16 hidden w-[280px] rounded-[28px] border border-white/80 bg-white/82 p-4 shadow-[0_28px_90px_-72px_rgba(37,99,235,0.78)] backdrop-blur-xl lg:block"
+        className="absolute -left-10 top-16 z-10 hidden w-[240px] rounded-[28px] border border-white/80 bg-white/82 p-4 shadow-[0_28px_90px_-72px_rgba(37,99,235,0.78)] backdrop-blur-xl xl:block"
         animate={{ y: [0, -12, 0], rotate: [-1.5, -0.2, -1.5] }}
         transition={{ duration: 7.5, repeat: Infinity, ease: "easeInOut" }}
       >
@@ -240,7 +239,7 @@ function HeroChatShowcase() {
 
       <motion.div
         aria-hidden="true"
-        className="absolute -right-8 top-24 hidden w-[300px] rounded-[30px] border border-white/80 bg-[#f8fbff]/86 p-4 shadow-[0_30px_100px_-72px_rgba(37,99,235,0.86)] backdrop-blur-xl lg:block"
+        className="absolute -right-10 top-24 z-10 hidden w-[240px] rounded-[30px] border border-white/80 bg-[#f8fbff]/86 p-4 shadow-[0_30px_100px_-72px_rgba(37,99,235,0.86)] backdrop-blur-xl xl:block"
         animate={{ y: [0, 14, 0], rotate: [1.4, 0.2, 1.4] }}
         transition={{ duration: 8.2, repeat: Infinity, ease: "easeInOut" }}
       >
