@@ -1,35 +1,42 @@
+import { CalendarCheck, CalendarX } from "lucide-react";
+import { StatusBadge } from "@/components/admin/StatusBadge";
+import { formatDateTime, humanize } from "@/lib/format";
+
 export function AppointmentTable({ appointments }: { appointments: Array<Record<string, unknown>> }) {
+  if (appointments.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-[#1d355f] px-6 py-12 text-center text-sm text-[#94a3b8]">
+        No appointments recorded yet.
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-hidden rounded-xl border border-[#e5e5e5] bg-[#ffffff]">
-      <table className="w-full min-w-[680px] text-left text-sm">
-        <thead className="bg-[#f5f5f5] text-[#525252]">
-          <tr>
-              <th className="px-4 py-3">Start</th>
-              <th className="px-4 py-3">End</th>
-              <th className="px-4 py-3">Mode</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Google</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#ededed] text-[#737373]">
-          {appointments.map((appointment) => (
-            <tr key={String(appointment.id)}>
-              <td className="px-4 py-3">{String(appointment.start_time || "Pending")}</td>
-              <td className="px-4 py-3">{String(appointment.end_time || "Pending")}</td>
-              <td className="px-4 py-3">{String(appointment.modality || "Not provided")}</td>
-              <td className="px-4 py-3">{String(appointment.status || "requested")}</td>
-              <td className="px-4 py-3">{String(appointment.google_event_id || "Not synced")}</td>
-            </tr>
-          ))}
-          {appointments.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="px-4 py-8 text-center text-[#737373]">
-                No appointments recorded.
-              </td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
-    </div>
+    <ul className="divide-y divide-[#1d355f]/60 overflow-hidden rounded-2xl border border-[#1d355f]/80 bg-[#070e1c]">
+      {appointments.map((appointment) => {
+        const synced = Boolean(appointment.google_event_id);
+        const hasTime = Boolean(appointment.start_time);
+        return (
+          <li key={String(appointment.id)} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold text-[#eef5ff]">
+                {hasTime ? formatDateTime(appointment.start_time) : "Awaiting a time slot"}
+              </p>
+              <p className="mt-1 text-xs text-[#64748b]">
+                {hasTime && appointment.end_time ? `Ends ${formatDateTime(appointment.end_time)} · ` : ""}
+                {humanize(appointment.modality, "Mode not set")}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge value={appointment.status || "requested"} />
+              <span className="inline-flex items-center gap-1.5 text-xs text-[#64748b]">
+                {synced ? <CalendarCheck className="h-3.5 w-3.5 text-[#4ade80]" /> : <CalendarX className="h-3.5 w-3.5" />}
+                {synced ? "Synced to Google Calendar" : "Not synced to calendar"}
+              </span>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

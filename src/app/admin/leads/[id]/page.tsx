@@ -25,6 +25,7 @@ import { legacyStatusToIntakeStatus, leadToIntakeCase, leadToPatient } from "@/f
 import { withDemoFallback } from "@/lib/demoData";
 import { getDemoLeadBundle } from "@/lib/demoStore";
 import { isPortfolioAdminSession } from "@/lib/portfolioAccess";
+import { formatDateTime, humanize } from "@/lib/format";
 import { getLeadBundle } from "@/lib/repository";
 import type { ChatMessage } from "@/types/lead";
 
@@ -76,17 +77,17 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
           <Panel icon={ClipboardList} title="Extracted intake fields">
             <Info label="Reason for visit" value={intakeCase.fields.reasonForVisit || "Not provided"} />
-            <Info label="Requested service" value={intakeCase.fields.requestedService || "Not routed"} />
-            <Info label="Urgency" value={intakeCase.fields.urgencyLevel || "unknown"} />
-            <Info label="Payment" value={intakeCase.fields.paymentType || "unknown"} />
+            <Info label="Requested service" value={humanize(intakeCase.fields.requestedService, "Not routed")} />
+            <Info label="Urgency" value={humanize(intakeCase.fields.urgencyLevel, "Unknown")} />
+            <Info label="Payment" value={humanize(intakeCase.fields.paymentType, "Unknown")} />
             <Info label="Availability" value={intakeCase.fields.availability || "Not provided"} />
           </Panel>
 
           <Panel icon={AlertTriangle} title="Risk and handoff">
-            <Info label="Status" value={intakeCase.status} />
+            <Info label="Status" value={humanize(intakeCase.status)} />
             <Info label="Handoff required" value={intakeCase.handoffRequired ? "Yes" : "No"} />
             <Info label="Handoff reason" value={intakeCase.handoffReason || "None recorded"} />
-            <Info label="Risk flags" value={riskFlags.length ? riskFlags.join(", ") : "None detected"} />
+            <Info label="Risk flags" value={riskFlags.length ? riskFlags.map((flag) => humanize(flag)).join(", ") : "None detected"} />
           </Panel>
         </aside>
 
@@ -114,9 +115,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <div className="space-y-3">
               {((bundle.appointments || []) as Array<Record<string, unknown>>).map((appointment) => (
                 <div key={String(appointment.id)} className="rounded-lg border border-[#ededed] bg-[#fafafa] p-4 text-sm">
-                  <p className="font-semibold text-[#262626]">{String(appointment.status || "requested")}</p>
+                  <p className="font-semibold text-[#262626]">{humanize(appointment.status || "requested")}</p>
                   <p className="mt-1 text-[#737373]">
-                    {String(appointment.start_time || "No slot selected")} - {String(appointment.end_time || "pending")}
+                    {appointment.start_time
+                      ? `${formatDateTime(appointment.start_time)} – ${formatDateTime(appointment.end_time, "end pending")}`
+                      : "No slot selected yet"}
                   </p>
                   <p className="mt-1 text-[#737373]">{String(appointment.notes || "No notes")}</p>
                 </div>
@@ -179,8 +182,8 @@ function CaseDecisionPanel({
       </div>
 
       <div className="grid border-t border-black/5 bg-white/60 md:grid-cols-3">
-        <DecisionMetric label="Risk flags" value={riskFlags.length ? riskFlags.join(", ") : "None detected"} />
-        <DecisionMetric label="Case status" value={intakeCase.status} />
+        <DecisionMetric label="Risk flags" value={riskFlags.length ? riskFlags.map((flag) => humanize(flag)).join(", ") : "None detected"} />
+        <DecisionMetric label="Case status" value={humanize(intakeCase.status)} />
         <DecisionMetric label="Handoff" value={intakeCase.handoffRequired ? "Required" : "Not required"} />
       </div>
     </section>
@@ -212,7 +215,7 @@ function CaseTimeline({ intakeCase, auditEvents }: { intakeCase: IntakeCase; aud
             <p className="mt-1 text-xs text-[#737373]">Operational path from patient message to staff action.</p>
           </div>
         </div>
-        <span className="rounded-full bg-[#eff6ff] px-3 py-1 text-xs font-semibold text-[#1d4ed8]">{intakeCase.status}</span>
+        <span className="rounded-full bg-[#eff6ff] px-3 py-1 text-xs font-semibold text-[#1d4ed8]">{humanize(intakeCase.status)}</span>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-5">
@@ -254,7 +257,7 @@ function AuditTrail({ auditEvents }: { auditEvents: AuditEvent[] }) {
                       {auditEventLabel(event)}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-[#737373]">{event.createdAt || "Timestamp unavailable"}</p>
+                  <p className="mt-1 text-xs text-[#737373]">{formatDateTime(event.createdAt, "Timestamp unavailable")}</p>
                 </div>
                 {event.actor ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f5f5f5] px-2.5 py-1 text-xs font-semibold text-[#525252]">
@@ -405,7 +408,7 @@ function timelineStep(label: string, event: AuditEvent | undefined, expected: bo
   return {
     label,
     done: Boolean(event || expected),
-    detail: event?.createdAt ? event.createdAt : expected ? "Expected in this workflow" : "Waiting for next action",
+    detail: event?.createdAt ? formatDateTime(event.createdAt) : expected ? "Expected in this workflow" : "Waiting for next action",
   };
 }
 
@@ -457,11 +460,11 @@ function auditRows(event: AuditEvent): Array<[string, string]> {
   const metadata = event.metadata || {};
   const rows: Array<[string, string]> = [];
 
-  if (metadata.decision) rows.push(["Policy decision", String(metadata.decision)]);
-  if (metadata.severity) rows.push(["Severity", String(metadata.severity)]);
+  if (metadata.decision) rows.push(["Policy decision", humanize(metadata.decision)]);
+  if (metadata.severity) rows.push(["Severity", humanize(metadata.severity)]);
   if (metadata.flags) rows.push(["Risk flags", formatAuditValue(metadata.flags)]);
   if (metadata.reason) rows.push(["Reason", String(metadata.reason)]);
-  if (metadata.from || metadata.to) rows.push(["Transition", `${metadata.from || "unknown"} -> ${metadata.to || "unknown"}`]);
+  if (metadata.from || metadata.to) rows.push(["Transition", `${humanize(metadata.from, "Unknown")} → ${humanize(metadata.to, "Unknown")}`]);
   if (metadata.completeness) rows.push(["Completeness", formatCompleteness(metadata.completeness)]);
   if (metadata.extractedFields) rows.push(["Extracted fields", formatExtractedFields(metadata.extractedFields)]);
   if (metadata.handoffRequired !== undefined) rows.push(["Handoff required", metadata.handoffRequired ? "Yes" : "No"]);
@@ -476,7 +479,7 @@ function auditRows(event: AuditEvent): Array<[string, string]> {
   return Object.entries(metadata)
     .filter(([, value]) => value !== undefined && value !== null && value !== "")
     .slice(0, 6)
-    .map(([key, value]) => [formatAuditAction(key), formatAuditValue(value)]);
+    .map(([key, value]) => [humanize(key.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase()), formatAuditValue(value)]);
 }
 
 function formatCompleteness(value: unknown) {
@@ -499,5 +502,5 @@ function formatAuditValue(value: unknown): string {
   if (Array.isArray(value)) return value.length ? value.map(String).join(", ") : "None";
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (value && typeof value === "object") return JSON.stringify(value);
-  return String(value);
+  return /^[a-z]+(_[a-z]+)+$/.test(String(value)) ? humanize(value) : String(value);
 }

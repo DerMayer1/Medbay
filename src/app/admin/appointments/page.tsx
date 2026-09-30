@@ -19,11 +19,12 @@ export default async function AppointmentsPage() {
       <p className="medbay-label">Scheduling</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#262626]">Appointments</h1>
       <p className="mt-1 text-sm text-[#737373]">Pending, confirmed, and calendar-backed scheduling records.</p>
-      <div className="mt-6">
-        <AppointmentCreator />
-      </div>
-      <div className="mt-6 overflow-x-auto">
+      <h2 className="mt-8 text-sm font-semibold uppercase tracking-[0.08em] text-[#64748b]">Requests and bookings</h2>
+      <div className="mt-3">
         <AppointmentTable appointments={appointments as Array<Record<string, unknown>>} />
+      </div>
+      <div className="mt-8">
+        <AppointmentCreator />
       </div>
     </AdminLayout>
   );
